@@ -1,0 +1,403 @@
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types: [completed]
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      version:
+        description: 'Version to deploy (default: latest)'
+        required: false
+        default: 'latest'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_BACKEND: ${{ github.repository }}-backend
+  IMAGE_NAME_FRONTEND: ${{ github.repository }}-frontend
+
+jobs:
+  # Pre-deployment checks
+  pre-deploy:
+    name: Pre-deployment Checks
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    outputs:
+      deploy-env: ${{ steps.set-env.outputs.environment }}
+      backend-image: ${{ steps.set-images.outputs.backend-image }}
+      frontend-image: ${{ steps.set-images.outputs.frontend-image }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Determine deployment environment
+        id: set-env
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "environment=${{ inputs.environment }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Set image tags
+        id: set-images
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${{ github.sha }}"
+          fi
+          
+          echo "backend-image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}:${VERSION}" >> $GITHUB_OUTPUT
+          echo "frontend-image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONTEND }}:${VERSION}" >> $GITHUB_OUTPUT
+          
+      - name: Verify Docker images exist
+        run: |
+          echo "Checking if images exist..."
+          docker manifest inspect ${{ steps.set-images.outputs.backend-image }}
+          docker manifest inspect ${{ steps.set-images.outputs.frontend-image }}
+
+  # Database Migration
+  database-migration:
+    name: Database Migration
+    runs-on: ubuntu-latest
+    needs: [pre-deploy]
+    environment: ${{ needs.pre-deploy.outputs.deploy-env }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+          
+      - name: Install backend dependencies
+        run: npm ci --prefix backend --production
+        
+      - name: Run database migrations
+        run: npm run db:migrate --prefix backend
+        env:
+          NODE_ENV: ${{ needs.pre-deploy.outputs.deploy-env }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          
+      - name: Create database backup before deployment
+        run: |
+          echo "Creating pre-deployment backup..."
+          BACKUP_NAME="pre-deploy-$(date +%Y%m%d-%H%M%S)"
+          npm run backup:create --prefix backend -- --name="${BACKUP_NAME}"
+        env:
+          NODE_ENV: ${{ needs.pre-deploy.outputs.deploy-env }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+
+  # Deploy to Kubernetes
+  deploy-k8s:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: [pre-deploy, database-migration]
+    environment: ${{ needs.pre-deploy.outputs.deploy-env }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+          
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
+          export KUBECONFIG=kubeconfig
+          kubectl config current-context
+          
+      - name: Deploy to Kubernetes
+        run: |
+          export KUBECONFIG=kubeconfig
+          
+          # Substitute environment variables in manifests
+          envsubst < k8s/namespace.yaml | kubectl apply -f -
+          envsubst < k8s/configmap.yaml | kubectl apply -f -
+          envsubst < k8s/secrets.yaml | kubectl apply -f -
+          envsubst < k8s/postgres.yaml | kubectl apply -f -
+          envsubst < k8s/redis.yaml | kubectl apply -f -
+          envsubst < k8s/backend.yaml | kubectl apply -f -
+          envsubst < k8s/frontend.yaml | kubectl apply -f -
+          envsubst < k8s/ingress.yaml | kubectl apply -f -
+          
+          # Wait for rollout to complete
+          kubectl rollout status deployment/ams-backend -n ams-${{ needs.pre-deploy.outputs.deploy-env }}
+          kubectl rollout status deployment/ams-frontend -n ams-${{ needs.pre-deploy.outputs.deploy-env }}
+        env:
+          ENVIRONMENT: ${{ needs.pre-deploy.outputs.deploy-env }}
+          BACKEND_IMAGE: ${{ needs.pre-deploy.outputs.backend-image }}
+          FRONTEND_IMAGE: ${{ needs.pre-deploy.outputs.frontend-image }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+
+  # Deploy with Docker Compose (Alternative)
+  deploy-compose:
+    name: Deploy with Docker Compose
+    runs-on: ubuntu-latest
+    needs: [pre-deploy, database-migration]
+    environment: ${{ needs.pre-deploy.outputs.deploy-env }}
+    if: false # Deaktiviert, da wir K8s verwenden
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          
+      - name: Deploy to server
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << EOF
+            cd /opt/anlagen-management-system
+            
+            # Backup current version
+            docker-compose down
+            tar -czf backup-$(date +%Y%m%d-%H%M%S).tar.gz docker-compose.prod.yml .env.production
+            
+            # Pull latest code
+            git pull origin ${{ github.ref_name }}
+            
+            # Update environment variables
+            cp .env.production.template .env.production
+            
+            # Pull and start new images
+            docker-compose -f docker-compose.prod.yml pull
+            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+            
+            # Health check
+            sleep 30
+            curl -f http://localhost/api/health || exit 1
+          EOF
+
+  # Smoke Tests
+  smoke-tests:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    needs: [pre-deploy, deploy-k8s]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install test dependencies
+        run: npm install axios newman
+        
+      - name: Wait for deployment to be ready
+        run: |
+          echo "Waiting for deployment to be ready..."
+          for i in {1..30}; do
+            if curl -f ${{ secrets.APP_URL }}/api/health; then
+              echo "Application is ready!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 10
+          done
+          
+      - name: Run smoke tests
+        run: |
+          # Basic API health check
+          curl -f ${{ secrets.APP_URL }}/api/health
+          
+          # Frontend accessibility
+          curl -f ${{ secrets.APP_URL }}
+          
+          # Database connectivity
+          curl -f ${{ secrets.APP_URL }}/api/health/db
+          
+          # Cache connectivity
+          curl -f ${{ secrets.APP_URL }}/api/health/cache
+          
+      - name: Run Postman collection
+        run: |
+          newman run postman/smoke-tests.json \
+            --environment postman/environment-${{ needs.pre-deploy.outputs.deploy-env }}.json \
+            --reporters cli,json \
+            --reporter-json-export smoke-test-results.json
+        continue-on-error: true
+        
+      - name: Upload smoke test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-test-results
+          path: smoke-test-results.json
+
+  # Performance Tests
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: [smoke-tests]
+    if: needs.pre-deploy.outputs.deploy-env == 'staging'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup k6
+        run: |
+          curl https://github.com/grafana/k6/releases/download/v0.47.0/k6-v0.47.0-linux-amd64.tar.gz -L | tar xvz --strip-components 1
+          sudo cp k6 /usr/local/bin/
+          
+      - name: Run performance tests
+        run: |
+          k6 run --out json=performance-results.json tests/performance/load-test.js
+        env:
+          API_BASE_URL: ${{ secrets.APP_URL }}/api
+          
+      - name: Upload performance test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-test-results
+          path: performance-results.json
+
+  # Security Tests
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    needs: [smoke-tests]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Run OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.10.0
+        with:
+          target: ${{ secrets.APP_URL }}
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+          
+      - name: Run Nuclei vulnerability scan
+        run: |
+          docker run --rm -v $(pwd):/nuclei projectdiscovery/nuclei:latest \
+            -target ${{ secrets.APP_URL }} \
+            -o /nuclei/security-scan-results.txt \
+            -severity medium,high,critical
+            
+      - name: Upload security scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-scan-results
+          path: security-scan-results.txt
+
+  # Rollback capability
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    needs: [pre-deploy]
+    environment: ${{ needs.pre-deploy.outputs.deploy-env }}
+    if: failure() && (needs.smoke-tests.result == 'failure' || needs.security-tests.result == 'failure')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+          
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
+          export KUBECONFIG=kubeconfig
+          
+      - name: Rollback deployment
+        run: |
+          export KUBECONFIG=kubeconfig
+          
+          # Rollback to previous version
+          kubectl rollout undo deployment/ams-backend -n ams-${{ needs.pre-deploy.outputs.deploy-env }}
+          kubectl rollout undo deployment/ams-frontend -n ams-${{ needs.pre-deploy.outputs.deploy-env }}
+          
+          # Wait for rollback to complete
+          kubectl rollout status deployment/ams-backend -n ams-${{ needs.pre-deploy.outputs.deploy-env }}
+          kubectl rollout status deployment/ams-frontend -n ams-${{ needs.pre-deploy.outputs.deploy-env }}
+          
+      - name: Verify rollback
+        run: |
+          curl -f ${{ secrets.APP_URL }}/api/health
+
+  # Cleanup
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    needs: [smoke-tests, performance-tests, security-tests]
+    if: always()
+    
+    steps:
+      - name: Cleanup old Docker images
+        run: |
+          # Keep only the last 5 versions
+          echo "Cleaning up old Docker images..."
+          
+      - name: Update deployment status
+        run: |
+          echo "Deployment completed with status: ${{ job.status }}"
+          
+  # Notifications
+  notify-success:
+    name: Notify Success
+    runs-on: ubuntu-latest
+    needs: [smoke-tests, performance-tests, security-tests]
+    if: success()
+    
+    steps:
+      - name: Send success notification
+        run: |
+          echo "🎉 Deployment to ${{ needs.pre-deploy.outputs.deploy-env }} successful!"
+          # Hier könnte eine Slack/Teams/Email-Benachrichtigung stehen
+          
+  notify-failure:
+    name: Notify Failure
+    runs-on: ubuntu-latest
+    needs: [pre-deploy, database-migration, deploy-k8s, smoke-tests, performance-tests, security-tests, rollback]
+    if: failure()
+    
+    steps:
+      - name: Send failure notification
+        run: |
+          echo "❌ Deployment to ${{ needs.pre-deploy.outputs.deploy-env }} failed!"
+          echo "Rollback status: ${{ needs.rollback.result }}"
+          # Hier könnte eine Slack/Teams/Email-Benachrichtigung mit Details stehen

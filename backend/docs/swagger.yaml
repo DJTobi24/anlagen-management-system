@@ -1,0 +1,1999 @@
+openapi: 3.0.3
+info:
+  title: Anlagen-Management-System API
+  description: |
+    REST API für das Anlagen-Management-System (AMS).
+    
+    Das System ermöglicht die Verwaltung von Anlagen mit Multi-Tenant-Unterstützung,
+    QR-Code-basierter Erfassung und umfassenden Administrationsfunktionen.
+    
+    ## Authentifizierung
+    
+    Die API verwendet JWT-basierte Authentifizierung. Nach dem Login wird ein Token
+    zurückgegeben, der bei allen weiteren Anfragen im Authorization-Header übertragen
+    werden muss:
+    ```
+    Authorization: Bearer <jwt-token>
+    ```
+    
+    ## Multi-Tenant-Architektur
+    
+    Das System unterstützt mehrere Mandanten. Alle Daten sind automatisch nach
+    Mandanten getrennt basierend auf dem authentifizierten Benutzer.
+    
+    ## Fehlerbehandlung
+    
+    Die API gibt strukturierte Fehlerantworten zurück:
+    ```json
+    {
+      "success": false,
+      "message": "Beschreibung des Fehlers",
+      "errors": {
+        "field": "Spezifischer Feldfehleer"
+      },
+      "code": "ERROR_CODE"
+    }
+    ```
+    
+  version: 1.0.0
+  contact:
+    name: AMS Support
+    email: support@ams.example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3001/api
+    description: Development Server
+  - url: https://api.ams.example.com/api
+    description: Production Server
+
+tags:
+  - name: Authentication
+    description: Benutzerauthentifizierung und -verwaltung
+  - name: Anlagen
+    description: Anlagenverwaltung und QR-Code-Erfassung
+  - name: AKS-Codes
+    description: Verwaltung von AKS-Klassifizierungen
+  - name: Import
+    description: Excel-Import-Funktionalitäten
+  - name: Admin
+    description: Administratorfunktionen (nur für Admins)
+  - name: Users
+    description: Benutzerverwaltung
+  - name: Audit
+    description: Audit-Logs und Nachverfolgung
+
+paths:
+  # Authentication Endpoints
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Benutzer anmelden
+      description: Meldet einen Benutzer mit E-Mail und Passwort an
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: securePassword123!
+                remember:
+                  type: boolean
+                  description: Angemeldet bleiben
+                  default: false
+      responses:
+        '200':
+          description: Erfolgreiche Anmeldung
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      user:
+                        $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Neuen Benutzer registrieren
+      description: Erstellt einen neuen Benutzer (nur für Administratoren)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: Benutzer erfolgreich erstellt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /auth/me:
+    get:
+      tags: [Authentication]
+      summary: Aktueller Benutzer
+      description: Gibt Informationen über den aktuell angemeldeten Benutzer zurück
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Benutzerinformationen
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Benutzer abmelden
+      description: Meldet den aktuellen Benutzer ab
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Erfolgreich abgemeldet
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Logged out successfully
+
+  /auth/change-password:
+    post:
+      tags: [Authentication]
+      summary: Passwort ändern
+      description: Ändert das Passwort des aktuellen Benutzers
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword:
+                  type: string
+                  format: password
+                newPassword:
+                  type: string
+                  format: password
+                  minLength: 6
+      responses:
+        '200':
+          description: Passwort erfolgreich geändert
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # Anlagen Endpoints
+  /anlagen:
+    get:
+      tags: [Anlagen]
+      summary: Alle Anlagen abrufen
+      description: Gibt eine Liste aller Anlagen des aktuellen Mandanten zurück
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Seitennummer
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Anzahl Einträge pro Seite
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: search
+          in: query
+          description: Suchbegriff
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter nach Status
+          schema:
+            type: string
+            enum: [aktiv, wartung, defekt, außer_betrieb]
+        - name: aksCode
+          in: query
+          description: Filter nach AKS-Code
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: Sortierung (Format: field:asc/desc)
+          schema:
+            type: string
+            example: bezeichnung:asc
+      responses:
+        '200':
+          description: Liste der Anlagen
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Anlage'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Anlagen]
+      summary: Neue Anlage erstellen
+      description: Erstellt eine neue Anlage
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnlageCreate'
+      responses:
+        '201':
+          description: Anlage erfolgreich erstellt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Anlage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /anlagen/{id}:
+    get:
+      tags: [Anlagen]
+      summary: Anlage nach ID abrufen
+      description: Gibt eine spezifische Anlage zurück
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Anlage ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Anlage gefunden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Anlage'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags: [Anlagen]
+      summary: Anlage aktualisieren
+      description: Aktualisiert eine bestehende Anlage
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Anlage ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnlageUpdate'
+      responses:
+        '200':
+          description: Anlage erfolgreich aktualisiert
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Anlage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags: [Anlagen]
+      summary: Anlage löschen
+      description: Löscht eine Anlage
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Anlage ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Anlage erfolgreich gelöscht
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /anlagen/qr/{qrCode}:
+    get:
+      tags: [Anlagen]
+      summary: Anlage nach QR-Code suchen
+      description: Sucht eine Anlage anhand des QR-Codes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: qrCode
+          in: path
+          required: true
+          description: QR-Code der Anlage
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Anlage gefunden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Anlage'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /anlagen/bulk:
+    put:
+      tags: [Anlagen]
+      summary: Bulk-Update von Anlagen
+      description: Aktualisiert mehrere Anlagen gleichzeitig
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids, updates]
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+                  example: ["1", "2", "3"]
+                updates:
+                  $ref: '#/components/schemas/AnlageUpdate'
+      responses:
+        '200':
+          description: Anlagen erfolgreich aktualisiert
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      updated:
+                        type: integer
+                        example: 3
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags: [Anlagen]
+      summary: Bulk-Löschung von Anlagen
+      description: Löscht mehrere Anlagen gleichzeitig
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+                  example: ["1", "2", "3"]
+      responses:
+        '200':
+          description: Anlagen erfolgreich gelöscht
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      deleted:
+                        type: integer
+                        example: 3
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # AKS-Codes Endpoints
+  /aks-codes:
+    get:
+      tags: [AKS-Codes]
+      summary: Alle AKS-Codes abrufen
+      description: Gibt eine Liste aller AKS-Codes des aktuellen Mandanten zurück
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: kategorie
+          in: query
+          description: Filter nach Kategorie
+          schema:
+            type: string
+        - name: code
+          in: query
+          description: Filter nach Code
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Liste der AKS-Codes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AksCode'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [AKS-Codes]
+      summary: Neuen AKS-Code erstellen
+      description: Erstellt einen neuen AKS-Code (nur für Administratoren)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AksCodeCreate'
+      responses:
+        '201':
+          description: AKS-Code erfolgreich erstellt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/AksCode'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /aks-codes/{id}:
+    get:
+      tags: [AKS-Codes]
+      summary: AKS-Code nach ID abrufen
+      description: Gibt einen spezifischen AKS-Code zurück
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: AKS-Code ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: AKS-Code gefunden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/AksCode'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags: [AKS-Codes]
+      summary: AKS-Code aktualisieren
+      description: Aktualisiert einen bestehenden AKS-Code (nur für Administratoren)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: AKS-Code ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AksCodeUpdate'
+      responses:
+        '200':
+          description: AKS-Code erfolgreich aktualisiert
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/AksCode'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    delete:
+      tags: [AKS-Codes]
+      summary: AKS-Code löschen
+      description: Löscht einen AKS-Code (nur für Administratoren)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: AKS-Code ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: AKS-Code erfolgreich gelöscht
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # Import Endpoints
+  /import/jobs:
+    get:
+      tags: [Import]
+      summary: Import-Jobs abrufen
+      description: Gibt eine Liste aller Import-Jobs zurück
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter nach Status
+          schema:
+            type: string
+            enum: [pending, processing, completed, failed]
+        - name: type
+          in: query
+          description: Filter nach Import-Typ
+          schema:
+            type: string
+            enum: [anlagen, aks_codes, users]
+      responses:
+        '200':
+          description: Liste der Import-Jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ImportJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Import]
+      summary: Neuen Import-Job erstellen
+      description: Startet einen neuen Import-Job
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, type]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Excel-Datei für den Import
+                type:
+                  type: string
+                  enum: [anlagen, aks_codes, users]
+                  description: Import-Typ
+                konfiguration:
+                  type: object
+                  description: Import-Konfiguration als JSON
+      responses:
+        '201':
+          description: Import-Job erfolgreich erstellt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/ImportJob'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /import/jobs/{id}:
+    get:
+      tags: [Import]
+      summary: Import-Job nach ID abrufen
+      description: Gibt einen spezifischen Import-Job zurück
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Import-Job ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Import-Job gefunden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/ImportJob'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /import/jobs/{id}/retry:
+    post:
+      tags: [Import]
+      summary: Import-Job wiederholen
+      description: Startet einen fehlgeschlagenen Import-Job erneut
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Import-Job ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Import-Job erfolgreich neu gestartet
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/ImportJob'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /import/jobs/{id}/errors:
+    get:
+      tags: [Import]
+      summary: Import-Fehler herunterladen
+      description: Lädt eine Excel-Datei mit Import-Fehlern herunter
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Import-Job ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Fehlerbericht als Excel-Datei
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # Admin Endpoints
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: Alle Benutzer abrufen (Admin)
+      description: Gibt eine Liste aller Benutzer des aktuellen Mandanten zurück (nur für Administratoren)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: role
+          in: query
+          description: Filter nach Rolle
+          schema:
+            type: string
+            enum: [admin, techniker, aufnehmer]
+        - name: active
+          in: query
+          description: Filter nach Status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Liste der Benutzer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/users/{id}:
+    put:
+      tags: [Admin]
+      summary: Benutzer aktualisieren (Admin)
+      description: Aktualisiert einen Benutzer (nur für Administratoren)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Benutzer ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Benutzer erfolgreich aktualisiert
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    delete:
+      tags: [Admin]
+      summary: Benutzer löschen (Admin)
+      description: Löscht einen Benutzer (nur für Administratoren)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Benutzer ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Benutzer erfolgreich gelöscht
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/mandanten:
+    get:
+      tags: [Admin]
+      summary: Alle Mandanten abrufen (Admin)
+      description: Gibt eine Liste aller Mandanten zurück (nur für System-Administratoren)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Liste der Mandanten
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Mandant'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Admin]
+      summary: Neuen Mandanten erstellen (Admin)
+      description: Erstellt einen neuen Mandanten (nur für System-Administratoren)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MandantCreate'
+      responses:
+        '201':
+          description: Mandant erfolgreich erstellt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Mandant'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/stats:
+    get:
+      tags: [Admin]
+      summary: Systemstatistiken abrufen (Admin)
+      description: Gibt Systemstatistiken zurück (nur für Administratoren)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Systemstatistiken
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/AdminStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # Audit Endpoints
+  /audit-logs:
+    get:
+      tags: [Audit]
+      summary: Audit-Logs abrufen
+      description: Gibt eine Liste der Audit-Logs zurück
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: action
+          in: query
+          description: Filter nach Aktion
+          schema:
+            type: string
+            enum: [create, update, delete, login, logout, import, export, view]
+        - name: entityType
+          in: query
+          description: Filter nach Entitätstyp
+          schema:
+            type: string
+        - name: userId
+          in: query
+          description: Filter nach Benutzer ID
+          schema:
+            type: string
+        - name: dateFrom
+          in: query
+          description: Von Datum (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        - name: dateTo
+          in: query
+          description: Bis Datum (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Liste der Audit-Logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditLogEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        firstName:
+          type: string
+          example: Max
+        lastName:
+          type: string
+          example: Mustermann
+        role:
+          type: string
+          enum: [admin, techniker, aufnehmer]
+          example: techniker
+        mandantId:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174001"
+        mandant:
+          $ref: '#/components/schemas/Mandant'
+        aktiv:
+          type: boolean
+          example: true
+        letzteAnmeldung:
+          type: string
+          format: date-time
+          example: "2023-12-01T10:30:00Z"
+        erstelltAm:
+          type: string
+          format: date-time
+          example: "2023-01-01T10:00:00Z"
+        aktualisiertAm:
+          type: string
+          format: date-time
+          example: "2023-12-01T10:30:00Z"
+
+    UserCreate:
+      type: object
+      required: [email, password, firstName, lastName]
+      properties:
+        email:
+          type: string
+          format: email
+          example: newuser@example.com
+        password:
+          type: string
+          format: password
+          minLength: 6
+          example: securePassword123!
+        firstName:
+          type: string
+          example: Anna
+        lastName:
+          type: string
+          example: Schmidt
+        role:
+          type: string
+          enum: [admin, techniker, aufnehmer]
+          default: aufnehmer
+          example: techniker
+
+    UserUpdate:
+      type: object
+      properties:
+        firstName:
+          type: string
+          example: Anna
+        lastName:
+          type: string
+          example: Schmidt
+        role:
+          type: string
+          enum: [admin, techniker, aufnehmer]
+          example: techniker
+        aktiv:
+          type: boolean
+          example: true
+
+    Mandant:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174001"
+        name:
+          type: string
+          example: Mustermann GmbH
+        kurzbezeichnung:
+          type: string
+          example: MUST
+        adresse:
+          type: object
+          properties:
+            strasse:
+              type: string
+              example: Musterstraße
+            hausnummer:
+              type: string
+              example: "123"
+            plz:
+              type: string
+              example: "12345"
+            ort:
+              type: string
+              example: Musterstadt
+            land:
+              type: string
+              example: Deutschland
+        kontakt:
+          type: object
+          properties:
+            email:
+              type: string
+              format: email
+              example: info@mustermann.de
+            telefon:
+              type: string
+              example: "+49 123 456789"
+            ansprechpartner:
+              type: string
+              example: Max Mustermann
+        einstellungen:
+          type: object
+          properties:
+            maxAnlagen:
+              type: integer
+              example: 1000
+            maxBenutzer:
+              type: integer
+              example: 50
+            features:
+              type: array
+              items:
+                type: string
+              example: ["excel_import", "audit_logs"]
+        aktiv:
+          type: boolean
+          example: true
+        erstelltAm:
+          type: string
+          format: date-time
+          example: "2023-01-01T10:00:00Z"
+        aktualisiertAm:
+          type: string
+          format: date-time
+          example: "2023-12-01T10:30:00Z"
+
+    MandantCreate:
+      type: object
+      required: [name, kurzbezeichnung, adresse, kontakt]
+      properties:
+        name:
+          type: string
+          example: Neue Firma GmbH
+        kurzbezeichnung:
+          type: string
+          maxLength: 10
+          example: NEUE
+        adresse:
+          type: object
+          required: [strasse, plz, ort]
+          properties:
+            strasse:
+              type: string
+              example: Neue Straße
+            hausnummer:
+              type: string
+              example: "456"
+            plz:
+              type: string
+              example: "54321"
+            ort:
+              type: string
+              example: Neue Stadt
+            land:
+              type: string
+              default: Deutschland
+              example: Deutschland
+        kontakt:
+          type: object
+          required: [email]
+          properties:
+            email:
+              type: string
+              format: email
+              example: info@neuefirma.de
+            telefon:
+              type: string
+              example: "+49 987 654321"
+            ansprechpartner:
+              type: string
+              example: Anna Schmidt
+        einstellungen:
+          type: object
+          properties:
+            maxAnlagen:
+              type: integer
+              default: 1000
+              example: 500
+            maxBenutzer:
+              type: integer
+              default: 50
+              example: 25
+            features:
+              type: array
+              items:
+                type: string
+              default: []
+              example: ["excel_import"]
+
+    Anlage:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174002"
+        qrCode:
+          type: string
+          example: QR123456
+        objektId:
+          type: string
+          example: OBJ001
+        raum:
+          type: string
+          example: Keller
+        etage:
+          type: string
+          example: UG
+        gebaeude:
+          type: string
+          example: Hauptgebäude
+        aksCode:
+          type: string
+          example: HZ001
+        bezeichnung:
+          type: string
+          example: Heizung Keller
+        hersteller:
+          type: string
+          example: Viessmann
+        typ:
+          type: string
+          example: Vitola 200
+        seriennummer:
+          type: string
+          example: V123456789
+        baujahr:
+          type: integer
+          example: 2015
+        status:
+          type: string
+          enum: [aktiv, wartung, defekt, außer_betrieb]
+          example: aktiv
+        zustandsBewertung:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 4
+        letzteWartung:
+          type: string
+          format: date
+          example: "2023-06-15"
+        naechsteWartung:
+          type: string
+          format: date
+          example: "2024-06-15"
+        notizen:
+          type: string
+          example: Regelmäßige Wartung erforderlich
+        technischeDaten:
+          type: object
+          example:
+            leistung: 25.5
+            brennstoff: Gas
+            effizienzklasse: A+
+        mandantId:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174001"
+        erstelltAm:
+          type: string
+          format: date-time
+          example: "2023-01-01T10:00:00Z"
+        aktualisiertAm:
+          type: string
+          format: date-time
+          example: "2023-12-01T10:30:00Z"
+        erstelltVon:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        aktualisiertVon:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174000"
+
+    AnlageCreate:
+      type: object
+      required: [qrCode, objektId, raum, aksCode, bezeichnung]
+      properties:
+        qrCode:
+          type: string
+          example: QR123456
+        objektId:
+          type: string
+          example: OBJ001
+        raum:
+          type: string
+          example: Keller
+        etage:
+          type: string
+          example: UG
+        gebaeude:
+          type: string
+          example: Hauptgebäude
+        aksCode:
+          type: string
+          example: HZ001
+        bezeichnung:
+          type: string
+          example: Heizung Keller
+        hersteller:
+          type: string
+          example: Viessmann
+        typ:
+          type: string
+          example: Vitola 200
+        seriennummer:
+          type: string
+          example: V123456789
+        baujahr:
+          type: integer
+          example: 2015
+        status:
+          type: string
+          enum: [aktiv, wartung, defekt, außer_betrieb]
+          default: aktiv
+          example: aktiv
+        zustandsBewertung:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 4
+        letzteWartung:
+          type: string
+          format: date
+          example: "2023-06-15"
+        naechsteWartung:
+          type: string
+          format: date
+          example: "2024-06-15"
+        notizen:
+          type: string
+          example: Regelmäßige Wartung erforderlich
+        technischeDaten:
+          type: object
+          example:
+            leistung: 25.5
+            brennstoff: Gas
+            effizienzklasse: A+
+
+    AnlageUpdate:
+      type: object
+      properties:
+        qrCode:
+          type: string
+          example: QR123456
+        objektId:
+          type: string
+          example: OBJ001
+        raum:
+          type: string
+          example: Keller
+        etage:
+          type: string
+          example: UG
+        gebaeude:
+          type: string
+          example: Hauptgebäude
+        aksCode:
+          type: string
+          example: HZ001
+        bezeichnung:
+          type: string
+          example: Heizung Keller
+        hersteller:
+          type: string
+          example: Viessmann
+        typ:
+          type: string
+          example: Vitola 200
+        seriennummer:
+          type: string
+          example: V123456789
+        baujahr:
+          type: integer
+          example: 2015
+        status:
+          type: string
+          enum: [aktiv, wartung, defekt, außer_betrieb]
+          example: wartung
+        zustandsBewertung:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 3
+        letzteWartung:
+          type: string
+          format: date
+          example: "2023-12-01"
+        naechsteWartung:
+          type: string
+          format: date
+          example: "2024-12-01"
+        notizen:
+          type: string
+          example: Wartung durchgeführt
+        technischeDaten:
+          type: object
+          example:
+            leistung: 25.5
+            brennstoff: Gas
+            effizienzklasse: A+
+
+    AksCode:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174003"
+        code:
+          type: string
+          example: HZ001
+        bezeichnung:
+          type: string
+          example: Heizungsanlage
+        kategorie:
+          type: string
+          example: Heizung
+        beschreibung:
+          type: string
+          example: Zentrale Heizungsanlagen
+        pflichtfelder:
+          type: array
+          items:
+            type: string
+          example: ["hersteller", "typ", "baujahr", "leistung"]
+        optionaleFelder:
+          type: array
+          items:
+            type: string
+          example: ["seriennummer", "effizienzklasse"]
+        validierungsregeln:
+          type: object
+          example:
+            baujahr:
+              type: number
+              min: 1990
+              max: 2030
+            leistung:
+              type: number
+              min: 1
+              max: 1000
+        mandantId:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174001"
+        erstelltAm:
+          type: string
+          format: date-time
+          example: "2023-01-01T10:00:00Z"
+        aktualisiertAm:
+          type: string
+          format: date-time
+          example: "2023-12-01T10:30:00Z"
+
+    AksCodeCreate:
+      type: object
+      required: [code, bezeichnung, kategorie]
+      properties:
+        code:
+          type: string
+          example: LU001
+        bezeichnung:
+          type: string
+          example: Lüftungsanlage
+        kategorie:
+          type: string
+          example: Lüftung
+        beschreibung:
+          type: string
+          example: Zentrale Lüftungsanlagen
+        pflichtfelder:
+          type: array
+          items:
+            type: string
+          example: ["hersteller", "volumenstrom"]
+        optionaleFelder:
+          type: array
+          items:
+            type: string
+          example: ["filterklasse", "schallpegel"]
+        validierungsregeln:
+          type: object
+          example:
+            volumenstrom:
+              type: number
+              min: 100
+              max: 50000
+
+    AksCodeUpdate:
+      type: object
+      properties:
+        code:
+          type: string
+          example: LU001
+        bezeichnung:
+          type: string
+          example: Lüftungsanlage
+        kategorie:
+          type: string
+          example: Lüftung
+        beschreibung:
+          type: string
+          example: Zentrale Lüftungsanlagen
+        pflichtfelder:
+          type: array
+          items:
+            type: string
+          example: ["hersteller", "volumenstrom"]
+        optionaleFelder:
+          type: array
+          items:
+            type: string
+          example: ["filterklasse", "schallpegel"]
+        validierungsregeln:
+          type: object
+          example:
+            volumenstrom:
+              type: number
+              min: 100
+              max: 50000
+
+    ImportJob:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174004"
+        filename:
+          type: string
+          example: anlagen_import_20231201.xlsx
+        originalName:
+          type: string
+          example: anlagen_import.xlsx
+        filePath:
+          type: string
+          example: /uploads/imports/anlagen_import_20231201.xlsx
+        type:
+          type: string
+          enum: [anlagen, aks_codes, users]
+          example: anlagen
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+          example: completed
+        konfiguration:
+          type: object
+          example:
+            sheetName: Anlagen
+            startRow: 2
+            mapping:
+              qrCode: QR-Code
+              bezeichnung: Bezeichnung
+              hersteller: Hersteller
+        ergebnis:
+          type: object
+          properties:
+            processed:
+              type: integer
+              example: 150
+            imported:
+              type: integer
+              example: 145
+            updated:
+              type: integer
+              example: 0
+            errors:
+              type: integer
+              example: 5
+            errorDetails:
+              type: array
+              items:
+                type: object
+                properties:
+                  row:
+                    type: integer
+                    example: 15
+                  error:
+                    type: string
+                    example: "Hersteller ist erforderlich"
+                  data:
+                    type: object
+                    example:
+                      qrCode: QR123456
+                      bezeichnung: Heizung ohne Hersteller
+        userId:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        mandantId:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174001"
+        erstelltAm:
+          type: string
+          format: date-time
+          example: "2023-12-01T10:00:00Z"
+        aktualisiertAm:
+          type: string
+          format: date-time
+          example: "2023-12-01T10:30:00Z"
+        abgeschlossenAm:
+          type: string
+          format: date-time
+          example: "2023-12-01T10:30:00Z"
+
+    AuditLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174005"
+        userId:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        userName:
+          type: string
+          example: Max Mustermann
+        userRole:
+          type: string
+          enum: [admin, techniker, aufnehmer]
+          example: techniker
+        action:
+          type: string
+          enum: [create, update, delete, login, logout, import, export, view]
+          example: update
+        entityType:
+          type: string
+          example: Anlage
+        entityId:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174002"
+        entityName:
+          type: string
+          example: Heizung Keller
+        changes:
+          type: object
+          example:
+            status:
+              old: aktiv
+              new: wartung
+            zustandsBewertung:
+              old: 4
+              new: 3
+        ipAddress:
+          type: string
+          example: 192.168.1.100
+        userAgent:
+          type: string
+          example: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+        success:
+          type: boolean
+          example: true
+        errorMessage:
+          type: string
+          example: null
+        mandantId:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174001"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2023-12-01T10:30:00Z"
+
+    AdminStats:
+      type: object
+      properties:
+        users:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 45
+            active:
+              type: integer
+              example: 42
+            byRole:
+              type: object
+              properties:
+                admin:
+                  type: integer
+                  example: 3
+                techniker:
+                  type: integer
+                  example: 15
+                aufnehmer:
+                  type: integer
+                  example: 27
+            recentLogins:
+              type: integer
+              example: 28
+        mandanten:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 8
+            active:
+              type: integer
+              example: 7
+        anlagen:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 2847
+            byStatus:
+              type: object
+              properties:
+                aktiv:
+                  type: integer
+                  example: 2654
+                wartung:
+                  type: integer
+                  example: 145
+                defekt:
+                  type: integer
+                  example: 48
+            recentlyCreated:
+              type: integer
+              example: 127
+        imports:
+          type: object
+          properties:
+            totalJobs:
+              type: integer
+              example: 234
+            successfulJobs:
+              type: integer
+              example: 198
+            failedJobs:
+              type: integer
+              example: 36
+            recentJobs:
+              type: integer
+              example: 12
+        system:
+          type: object
+          properties:
+            storageUsed:
+              type: number
+              format: float
+              example: 15.7
+            storageTotal:
+              type: number
+              format: float
+              example: 100.0
+            lastBackup:
+              type: string
+              format: date-time
+              example: "2023-12-01T04:00:00Z"
+            uptime:
+              type: integer
+              example: 172800
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        total:
+          type: integer
+          example: 150
+        pages:
+          type: integer
+          example: 15
+        hasNext:
+          type: boolean
+          example: true
+        hasPrev:
+          type: boolean
+          example: false
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Validation failed
+        errors:
+          type: object
+          example:
+            email: Invalid email format
+            password: Password must be at least 6 characters
+        code:
+          type: string
+          example: VALIDATION_ERROR
+
+  responses:
+    BadRequest:
+      description: Ungültige Anfrage
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: Nicht autorisiert
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Error'
+              - type: object
+                properties:
+                  message:
+                    example: Authentication required
+
+    Forbidden:
+      description: Zugriff verweigert
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Error'
+              - type: object
+                properties:
+                  message:
+                    example: Insufficient permissions
+
+    NotFound:
+      description: Ressource nicht gefunden
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Error'
+              - type: object
+                properties:
+                  message:
+                    example: Resource not found
+
+    InternalServerError:
+      description: Interner Serverfehler
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Error'
+              - type: object
+                properties:
+                  message:
+                    example: Internal server error
+
+security:
+  - bearerAuth: []

@@ -1,0 +1,11 @@
+QR-Code,Bezeichnung,AKS-Code,Status,Zustandsbewertung,Hersteller,Typ,Baujahr,Leistung,Brennstoff,Gebäude,Etage,Raum,Beschreibung
+QRDEMO0001,Heizkessel Keller,HZ001,aktiv,4,Viessmann,Vitola 200,2018,150,erdgas,Hauptgebäude,UG,K01,Zentraler Heizkessel für Gebäude A
+QRDEMO0002,Heizkessel Dachboden,HZ001,aktiv,3,Buderus,Logano G124,2015,80,erdgas,Nebengebäude,DG,D01,Zusatzheizung für Werkstatt
+QRDEMO0003,Lüftungsanlage Büro,LU001,aktiv,5,Systemair,Save VTR 300,2020,2500,,"Bürogebäude A",2,201,Zentrale Lüftung für Büroetage
+QRDEMO0004,Lüftungsanlage Kantine,LU001,wartung,3,Wolf,CWL-2-325,2017,1500,,"Bürogebäude A",EG,K10,Lüftung für Kantinenbreich
+QRDEMO0005,Hauptverteilung,EL001,aktiv,4,Schneider,Prisma Plus P,2019,,,"Bürogebäude A",UG,E01,Hauptstromverteilung 400V
+QRDEMO0006,Aufzug Haupteingang,AU001,aktiv,4,Kone,MonoSpace 500,2016,,,,"Bürogebäude A",,,"Personenaufzug 8 Personen"
+QRDEMO0007,Wasserversorgung,SA001,aktiv,5,Grundfos,Scala2 3-45,2021,,,,Technikraum,UG,T01,Trinkwasserversorgung mit Druckerhöhung
+QRDEMO0008,Wärmepumpe Süd,HZ003,aktiv,5,Vaillant,aroTHERM plus,2022,12,,Außenanlage,,,"Luft-Wasser-Wärmepumpe für Heizung"
+QRDEMO0009,Notbeleuchtung,EL002,aktiv,4,Zumtobel,TECTON LED,2020,,,,Alle Etagen,,,"Zentrale Notlichtanlage mit Batteriepufferung"
+QRDEMO0010,Brandmeldeanlage,SI001,aktiv,5,Bosch,FPA-5000,2019,,,,"Bürogebäude A",,,"Zentrale Brandmeldeanlage mit 150 Meldern"
