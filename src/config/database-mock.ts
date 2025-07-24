@@ -1,10 +1,10 @@
-interface MockQueryResult {
+export interface MockQueryResult {
   rows: any[];
   rowCount: number;
 }
 
-class MockPool {
-  private isConnected = false;
+export class MockPool {
+  public isConnected = false;
 
   async query(text: string, params?: any[]): Promise<MockQueryResult> {
     console.log(`Mock DB Query: ${text}`, params ? `Params: ${JSON.stringify(params)}` : '');

@@ -1,6 +1,6 @@
-class MockRedisClient {
-  private store: Map<string, string> = new Map();
-  private connected = false;
+export class MockRedisClient {
+  public store: Map<string, string> = new Map();
+  public connected = false;
 
   async connect() {
     this.connected = true;
