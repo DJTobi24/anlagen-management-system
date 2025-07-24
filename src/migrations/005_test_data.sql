@@ -2,7 +2,7 @@
 -- Generiert am: 2025-01-24
 
 -- Lösche vorhandene Daten
-TRUNCATE TABLE anlagen, users, mandanten, aks_codes RESTART IDENTITY CASCADE;
+TRUNCATE TABLE anlagen, objekte, liegenschaften, users, mandanten, aks_codes RESTART IDENTITY CASCADE;
 
 -- AKS-Codes einfügen
 INSERT INTO aks_codes (code, name, category, is_active) VALUES
@@ -47,53 +47,102 @@ INSERT INTO aks_codes (code, name, category, is_active) VALUES
 ('523', 'Zugangskontrolle', 'Sicherheit', true);
 
 -- Mandanten einfügen
-INSERT INTO mandanten (name, code, description, is_active) VALUES
-('Stadtwerke München', 'SWM', 'Kommunaler Energieversorger und Infrastrukturdienstleister', true),
-('Immobilien Berlin GmbH', 'IBG', 'Verwaltung städtischer Immobilien in Berlin', true),
-('Klinikum Frankfurt', 'KLF', 'Universitätsklinikum mit mehreren Standorten', true);
+INSERT INTO mandanten (name, description, is_active) VALUES
+('Stadtwerke München', 'Kommunaler Energieversorger und Infrastrukturdienstleister', true),
+('Immobilien Berlin GmbH', 'Verwaltung städtischer Immobilien in Berlin', true),
+('Klinikum Frankfurt', 'Universitätsklinikum mit mehreren Standorten', true);
 
 -- Benutzer einfügen (Passwort: Admin123! für Admins, User123! für andere)
-INSERT INTO users (email, password, name, role, mandant_id, is_active) VALUES
+INSERT INTO users (email, password, first_name, last_name, role, mandant_id, is_active) VALUES
 -- Stadtwerke München
-('admin@swm.de', '$2a$10$YourHashedPasswordHere', 'Admin Stadtwerke München', 'admin', 1, true),
-('technik@swm.de', '$2a$10$YourHashedPasswordHere', 'Max Müller', 'techniker', 1, true),
-('manager@swm.de', '$2a$10$YourHashedPasswordHere', 'Anna Schmidt', 'manager', 1, true),
-('viewer@swm.de', '$2a$10$YourHashedPasswordHere', 'Tom Wagner', 'viewer', 1, true),
+('admin@swm.de', '$2a$10$YourHashedPasswordHere', 'Admin', 'SWM', 'admin', 1, true),
+('technik@swm.de', '$2a$10$YourHashedPasswordHere', 'Max', 'Müller', 'techniker', 1, true),
+('aufnehmer@swm.de', '$2a$10$YourHashedPasswordHere', 'Anna', 'Schmidt', 'aufnehmer', 1, true),
 
 -- Immobilien Berlin GmbH
-('admin@ibg.de', '$2a$10$YourHashedPasswordHere', 'Admin Immobilien Berlin', 'admin', 2, true),
-('technik@ibg.de', '$2a$10$YourHashedPasswordHere', 'Lisa Weber', 'techniker', 2, true),
-('manager@ibg.de', '$2a$10$YourHashedPasswordHere', 'Michael Becker', 'manager', 2, true),
-('viewer@ibg.de', '$2a$10$YourHashedPasswordHere', 'Sarah Klein', 'viewer', 2, true),
+('admin@ibg.de', '$2a$10$YourHashedPasswordHere', 'Admin', 'IBG', 'admin', 2, true),
+('technik@ibg.de', '$2a$10$YourHashedPasswordHere', 'Lisa', 'Weber', 'techniker', 2, true),
+('aufnehmer@ibg.de', '$2a$10$YourHashedPasswordHere', 'Michael', 'Becker', 'aufnehmer', 2, true),
 
 -- Klinikum Frankfurt
-('admin@klf.de', '$2a$10$YourHashedPasswordHere', 'Admin Klinikum Frankfurt', 'admin', 3, true),
-('technik@klf.de', '$2a$10$YourHashedPasswordHere', 'Frank Hoffmann', 'techniker', 3, true),
-('manager@klf.de', '$2a$10$YourHashedPasswordHere', 'Julia Schulz', 'manager', 3, true),
-('viewer@klf.de', '$2a$10$YourHashedPasswordHere', 'Peter Meyer', 'viewer', 3, true);
+('admin@klf.de', '$2a$10$YourHashedPasswordHere', 'Admin', 'KLF', 'admin', 3, true),
+('technik@klf.de', '$2a$10$YourHashedPasswordHere', 'Frank', 'Hoffmann', 'techniker', 3, true),
+('aufnehmer@klf.de', '$2a$10$YourHashedPasswordHere', 'Julia', 'Schulz', 'aufnehmer', 3, true);
 
--- Beispiel-Anlagen für jeden Mandanten
+-- Liegenschaften einfügen
+INSERT INTO liegenschaften (mandant_id, name, address, description, is_active) VALUES
 -- Stadtwerke München
-INSERT INTO anlagen (anlagen_nummer, name, liegenschaft, objekt, aks_code, hersteller, modell, seriennummer, baujahr, letzte_wartung, naechste_wartung, status, mandant_id, wartungsintervall_monate, anschaffungswert, standort, verantwortlicher, bemerkungen) VALUES
-('SWM-00001', 'Mittelspannungsanlage Hauptverteilung', 'Kraftwerk Nord', 'Gebäude A', '112', 'Siemens', 'NXPLUS C', 'SN2024001', 2020, '2024-06-15', '2024-12-15', 'aktiv', 1, 6, 250000, 'UG.1.15', 'Max Müller', 'Hauptverteilung 20kV'),
-('SWM-00002', 'Gasheizung Verwaltung', 'Hauptverwaltung', 'Hauptgebäude', '211', 'Viessmann', 'Vitoplex 300', 'VIT2021234', 2021, '2024-09-01', '2025-03-01', 'aktiv', 1, 6, 85000, 'KG.2.03', 'Anna Schmidt', 'Leistung: 500kW'),
-('SWM-00003', 'Serveranlage Rechenzentrum', 'Hauptverwaltung', 'IT-Zentrum', '133', 'Dell', 'PowerEdge R750', 'DELL2023567', 2023, '2024-11-01', '2025-02-01', 'aktiv', 1, 3, 120000, '3.OG.2.12', 'Tom Wagner', 'Redundanter Server'),
-('SWM-00004', 'Sprinkleranlage Lager', 'Kraftwerk Nord', 'Lagerhalle', '512', 'Minimax', 'MX 5000', 'MX2022789', 2022, '2024-07-15', '2025-01-15', 'wartung', 1, 6, 180000, 'EG.1.01', 'Max Müller', 'Wartung läuft'),
-('SWM-00005', 'Personenaufzug Verwaltung', 'Hauptverwaltung', 'Hauptgebäude', '411', 'KONE', 'MonoSpace 500', 'KONE2019345', 2019, '2024-10-01', '2025-01-01', 'aktiv', 1, 3, 95000, 'Schacht 1', 'Anna Schmidt', '8 Personen, 630kg'),
+(1, 'Kraftwerk Nord', 'Kraftwerkstraße 1, 80333 München', 'Hauptkraftwerk der Stadtwerke München', true),
+(1, 'Hauptverwaltung', 'Emmy-Noether-Straße 2, 80287 München', 'Verwaltungsgebäude der Stadtwerke München', true),
 
 -- Immobilien Berlin GmbH
-('IBG-00006', 'Zentrale Lüftung Bürogebäude', 'Bürogebäude A', 'Hauptgebäude', '221', 'Wolf', 'CKL-A-9000', 'WOLF2022123', 2022, '2024-08-15', '2025-02-15', 'aktiv', 2, 6, 75000, 'Dach', 'Lisa Weber', 'Mit Wärmerückgewinnung'),
-('IBG-00007', 'Videoüberwachung Parkhaus', 'Parkhaus Nord', 'Alle Ebenen', '522', 'Bosch', 'AUTODOME IP 5000', 'BOSCH2023456', 2023, '2024-09-01', '2024-12-01', 'aktiv', 2, 3, 45000, 'Diverse', 'Michael Becker', '24 Kameras'),
-('IBG-00008', 'Wärmepumpe Wohnanlage', 'Wohnanlage Mitte', 'Block C', '213', 'Vaillant', 'aroTHERM plus', 'VAIL2024001', 2024, '2024-10-15', '2025-04-15', 'aktiv', 2, 6, 65000, 'TG.1.05', 'Lisa Weber', 'Luft-Wasser-WP'),
-('IBG-00009', 'Brandmeldeanlage Büro', 'Bürogebäude A', 'Alle Etagen', '510', 'Siemens', 'Cerberus PRO', 'SIE2021789', 2021, '2024-07-01', '2025-01-01', 'aktiv', 2, 6, 120000, 'EG.0.15', 'Michael Becker', 'Vernetzt mit Feuerwehr'),
-('IBG-00010', 'Trinkwasseranlage', 'Gewerbezentrum West', 'Hauptgebäude', '311', 'Grundfos', 'Hydro MPC', 'GRU2020567', 2020, '2024-11-15', '2025-05-15', 'aktiv', 2, 6, 35000, 'KG.1.22', 'Lisa Weber', 'Druckerhöhung'),
+(2, 'Bürogebäude A', 'Alexanderplatz 1, 10178 Berlin', 'Hauptbürogebäude der Immobilien Berlin GmbH', true),
+(2, 'Wohnanlage Mitte', 'Unter den Linden 50, 10117 Berlin', 'Wohnkomplex in Berlin Mitte', true),
 
 -- Klinikum Frankfurt
-('KLF-00011', 'Notstromanlage Chirurgie', 'Chirurgie', 'Hauptgebäude', '113', 'MTU', 'Series 4000', 'MTU2022234', 2022, '2024-08-01', '2025-02-01', 'aktiv', 3, 6, 450000, 'TG.2.01', 'Frank Hoffmann', '2000 kVA'),
-('KLF-00012', 'VRF-Klimasystem OP', 'Chirurgie', 'OP-Bereich', '232', 'Daikin', 'VRV IV+', 'DAI2023890', 2023, '2024-09-15', '2024-12-15', 'aktiv', 3, 3, 280000, '4.OG', 'Julia Schulz', 'Reinraum-Klimatisierung'),
-('KLF-00013', 'Aufbereitungsanlage', 'Innere Medizin', 'Station 3', '312', 'Belimed', 'WD290', 'BEL2021456', 2021, '2024-10-01', '2025-04-01', 'aktiv', 3, 6, 95000, '2.OG.3.45', 'Frank Hoffmann', 'Instrumentenaufbereitung'),
-('KLF-00014', 'Patientenaufzug', 'Hauptgebäude', 'Schacht 2', '411', 'Schindler', '3300', 'SCH2020123', 2020, '2024-11-01', '2025-02-01', 'aktiv', 3, 3, 125000, 'Schacht 2', 'Peter Meyer', 'Bettenaufzug 2500kg'),
-('KLF-00015', 'Zugangskontrolle', 'Psychiatrie', 'Alle Zugänge', '523', 'dormakaba', 'Matrix Pro', 'DOR2024567', 2024, '2024-06-15', '2024-12-15', 'aktiv', 3, 6, 85000, 'Diverse', 'Julia Schulz', 'Chipkarten-System');
+(3, 'Hauptgebäude', 'Theodor-Stern-Kai 7, 60590 Frankfurt am Main', 'Hauptgebäude des Universitätsklinikums', true),
+(3, 'Chirurgie', 'Theodor-Stern-Kai 9, 60590 Frankfurt am Main', 'Chirurgisches Zentrum', true);
 
--- Weitere Anlagen für realistische Datenmenge (insgesamt ~200)
--- Diese würden in einer echten Implementierung durch das Skript generiert werden
+-- Objekte einfügen
+INSERT INTO objekte (liegenschaft_id, name, description, floor, room, is_active) VALUES
+-- Kraftwerk Nord (liegenschaft_id = 1)
+(1, 'Gebäude A', 'Hauptgebäude des Kraftwerks', 'UG', '1.15', true),
+(1, 'Lagerhalle', 'Lager für Ersatzteile', 'EG', '1.01', true),
+
+-- Hauptverwaltung SWM (liegenschaft_id = 2)
+(2, 'Hauptgebäude', 'Verwaltungsgebäude', '3.OG', '2.12', true),
+(2, 'IT-Zentrum', 'Rechenzentrum', 'KG', '2.03', true),
+
+-- Bürogebäude A Berlin (liegenschaft_id = 3)
+(3, 'Hauptgebäude', 'Büroräume', 'Dach', NULL, true),
+(3, 'Alle Ebenen', 'Videoüberwachung', 'Diverse', NULL, true),
+
+-- Wohnanlage Mitte (liegenschaft_id = 4)
+(4, 'Block C', 'Wohnblock C', 'TG', '1.05', true),
+(4, 'Alle Etagen', 'Brandmeldeanlage', 'EG', '0.15', true),
+
+-- Hauptgebäude Klinikum (liegenschaft_id = 5)
+(5, 'Hauptgebäude', 'Zentralgebäude', 'TG', '2.01', true),
+(5, 'Station 3', 'Innere Medizin', '2.OG', '3.45', true),
+
+-- Chirurgie (liegenschaft_id = 6)
+(6, 'OP-Bereich', 'Operationssäle', '4.OG', NULL, true),
+(6, 'Alle Zugänge', 'Zugangskontrolle', 'Diverse', NULL, true);
+
+-- Anlagen einfügen
+INSERT INTO anlagen (objekt_id, t_nummer, aks_code, qr_code, name, description, status, zustands_bewertung, is_active) VALUES
+-- Kraftwerk Nord - Gebäude A (objekt_id = 1)
+(1, 'SWM-00001', '112', 'QR001', 'Mittelspannungsanlage Hauptverteilung', 'Hauptverteilung 20kV, Siemens NXPLUS C', 'aktiv', 2, true),
+
+-- Kraftwerk Nord - Lagerhalle (objekt_id = 2)
+(2, 'SWM-00002', '512', 'QR002', 'Sprinkleranlage Lager', 'Minimax MX 5000, Wartung läuft', 'wartung', 3, true),
+
+-- Hauptverwaltung - Hauptgebäude (objekt_id = 3)
+(3, 'SWM-00003', '133', 'QR003', 'Serveranlage Rechenzentrum', 'Dell PowerEdge R750, Redundanter Server', 'aktiv', 1, true),
+
+-- Hauptverwaltung - IT-Zentrum (objekt_id = 4)
+(4, 'SWM-00004', '211', 'QR004', 'Gasheizung Verwaltung', 'Viessmann Vitoplex 300, Leistung: 500kW', 'aktiv', 2, true),
+
+-- Bürogebäude A - Hauptgebäude (objekt_id = 5)
+(5, 'IBG-00001', '221', 'QR005', 'Zentrale Lüftung Bürogebäude', 'Wolf CKL-A-9000, Mit Wärmerückgewinnung', 'aktiv', 2, true),
+
+-- Bürogebäude A - Alle Ebenen (objekt_id = 6)
+(6, 'IBG-00002', '522', 'QR006', 'Videoüberwachung Parkhaus', 'Bosch AUTODOME IP 5000, 24 Kameras', 'aktiv', 1, true),
+
+-- Wohnanlage Mitte - Block C (objekt_id = 7)
+(7, 'IBG-00003', '213', 'QR007', 'Wärmepumpe Wohnanlage', 'Vaillant aroTHERM plus, Luft-Wasser-WP', 'aktiv', 1, true),
+
+-- Wohnanlage Mitte - Alle Etagen (objekt_id = 8)
+(8, 'IBG-00004', '510', 'QR008', 'Brandmeldeanlage Büro', 'Siemens Cerberus PRO, Vernetzt mit Feuerwehr', 'aktiv', 2, true),
+
+-- Hauptgebäude Klinikum (objekt_id = 9)
+(9, 'KLF-00001', '113', 'QR009', 'Notstromanlage Chirurgie', 'MTU Series 4000, 2000 kVA', 'aktiv', 1, true),
+
+-- Station 3 (objekt_id = 10)
+(10, 'KLF-00002', '312', 'QR010', 'Aufbereitungsanlage', 'Belimed WD290, Instrumentenaufbereitung', 'aktiv', 2, true),
+
+-- OP-Bereich (objekt_id = 11)
+(11, 'KLF-00003', '232', 'QR011', 'VRF-Klimasystem OP', 'Daikin VRV IV+, Reinraum-Klimatisierung', 'aktiv', 1, true),
+
+-- Alle Zugänge (objekt_id = 12)
+(12, 'KLF-00004', '523', 'QR012', 'Zugangskontrolle', 'dormakaba Matrix Pro, Chipkarten-System', 'aktiv', 1, true);
