@@ -184,7 +184,7 @@ jobs:
             cd /opt/anlagen-management-system
             
             # Backup current version
-            docker-compose down
+            docker compose down
             tar -czf backup-$(date +%Y%m%d-%H%M%S).tar.gz docker-compose.prod.yml .env.production
             
             # Pull latest code
@@ -194,8 +194,8 @@ jobs:
             cp .env.production.template .env.production
             
             # Pull and start new images
-            docker-compose -f docker-compose.prod.yml pull
-            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
             
             # Health check
             sleep 30

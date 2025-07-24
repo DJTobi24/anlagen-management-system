@@ -184,7 +184,7 @@ jobs:
     
     - name: Start services with Docker Compose
       run: |
-        docker-compose up -d --build
+        docker compose up -d --build
     
     - name: Wait for services
       run: |
@@ -214,15 +214,15 @@ jobs:
       if: always()
       run: |
         echo "=== Backend Logs ==="
-        docker-compose logs backend | tail -20
+        docker compose logs backend | tail -20
         
         echo "=== Frontend Logs ==="
-        docker-compose logs frontend | tail -20
+        docker compose logs frontend | tail -20
     
     - name: Cleanup
       if: always()
       run: |
-        docker-compose down -v
+        docker compose down -v
 
   dependency-check:
     runs-on: ubuntu-latest
