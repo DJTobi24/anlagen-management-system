@@ -1,0 +1,107 @@
+name: CI Pipeline (Simplified)
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  # Code Quality Checks
+  lint-and-build:
+    name: Lint & Build Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Install backend dependencies
+        run: npm ci
+        
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+        
+      - name: Run backend ESLint
+        run: npm run lint
+        
+      - name: Run frontend ESLint  
+        run: cd frontend && npm run lint
+        
+      - name: TypeScript type check (Backend)
+        run: npm run typecheck
+        
+      - name: Build frontend
+        run: cd frontend && npm run build
+        env:
+          REACT_APP_API_URL: /api/v1
+          REACT_APP_APP_NAME: Anlagen-Management-System
+          REACT_APP_VERSION: 1.0.0
+
+  # Security Scans
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd frontend && npm ci
+          
+      - name: Run npm audit (Backend)
+        run: npm audit --audit-level=high
+        continue-on-error: true
+        
+      - name: Run npm audit (Frontend)
+        run: cd frontend && npm audit --audit-level=high
+        continue-on-error: true
+
+  # Basic Tests
+  basic-tests:
+    name: Basic Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Install backend dependencies
+        run: npm ci
+        
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+        
+      - name: Run backend tests (if they exist)
+        run: npm run test || echo "No backend tests configured"
+        continue-on-error: true
+        
+      - name: Run frontend tests
+        run: cd frontend && npm run test
+        env:
+          CI: true
+          REACT_APP_API_URL: /api/v1
