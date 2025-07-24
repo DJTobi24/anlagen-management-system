@@ -4,8 +4,8 @@ import App from './App';
 
 // Mock react-router-dom
 jest.mock('react-router-dom', () => ({
-  BrowserRouter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  Routes: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  BrowserRouter: ({ children }: any) => <div>{children}</div>,
+  Routes: ({ children }: any) => <div>{children}</div>,
   Route: () => <div>Route</div>,
   Navigate: () => <div>Navigate</div>,
   useAuth: () => ({ user: null, loading: false }),
@@ -16,7 +16,7 @@ jest.mock('react-query', () => ({
   QueryClient: class {
     constructor() {}
   },
-  QueryClientProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  QueryClientProvider: ({ children }: any) => <div>{children}</div>,
 }));
 
 // Mock react-hot-toast
@@ -26,7 +26,7 @@ jest.mock('react-hot-toast', () => ({
 
 // Mock AuthContext
 jest.mock('./contexts/AuthContext', () => ({
-  AuthProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  AuthProvider: ({ children }: any) => <div>{children}</div>,
   useAuth: () => ({ user: null, loading: false }),
 }));
 
