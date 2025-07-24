@@ -173,4 +173,38 @@ export class AnlageController {
       next(error);
     }
   }
+
+  static async getStatistics(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.mandantId) {
+        throw createError('Mandant ID required', 400);
+      }
+
+      const statistics = await AnlageService.getStatistics(req.mandantId);
+
+      res.json({
+        message: 'Statistics retrieved successfully',
+        data: statistics,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getWarungenFaellig(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.mandantId) {
+        throw createError('Mandant ID required', 400);
+      }
+
+      const wartungen = await AnlageService.getWarungenFaellig(req.mandantId);
+
+      res.json({
+        message: 'Wartungen retrieved successfully',
+        data: wartungen,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

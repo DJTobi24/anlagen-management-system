@@ -14,6 +14,7 @@ import objektRoutes from '@/routes/objekte';
 import anlageRoutes from '@/routes/anlagen';
 import importRoutes from '@/routes/import';
 import aksRoutes from '@/routes/aks';
+import fmDataRoutes from '@/routes/fmData';
 import { errorHandler } from '@/middleware/errorHandler';
 import { notFound } from '@/middleware/notFound';
 import { ImportService } from '@/services/importService';
@@ -25,10 +26,13 @@ const PORT = process.env.PORT || 3000;
 const API_PREFIX = process.env.API_PREFIX || '/api';
 const API_VERSION = process.env.API_VERSION || 'v1';
 
+// Trust proxy for rate limiting when behind nginx
+app.set('trust proxy', true);
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  message: 'Too many requests from this IP, please try again later.',
+  message: 'Too many requests from this IP, please try again later.'
 });
 
 app.use(helmet());
@@ -54,6 +58,7 @@ app.use(`${API_PREFIX}/${API_VERSION}/objekte`, objektRoutes);
 app.use(`${API_PREFIX}/${API_VERSION}/anlagen`, anlageRoutes);
 app.use(`${API_PREFIX}/${API_VERSION}/import`, importRoutes);
 app.use(`${API_PREFIX}/${API_VERSION}/aks`, aksRoutes);
+app.use(`${API_PREFIX}/${API_VERSION}/fm-data`, fmDataRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

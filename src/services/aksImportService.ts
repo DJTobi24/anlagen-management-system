@@ -14,7 +14,7 @@ import { createError } from '@/middleware/errorHandler';
 
 export class AksImportService {
   private static readonly REQUIRED_COLUMNS = [
-    'aksCode', 'kasCode', 'fieldName', 'fieldType', 'dataType', 'isRequired'
+    'aks_code', 'name', 'description', 'maintenance_interval_months'
   ];
 
   static async importAksFromExcel(filePath: string): Promise<AksImportResult> {
@@ -79,39 +79,32 @@ export class AksImportService {
     // Validate headers
     this.validateHeaders(headers);
 
-    // Map rows to import data
-    return this.mapRowsToImportData(dataRows, headers);
+    // Map rows to AKS code import data
+    return this.mapRowsToAksCodeData(dataRows, headers);
   }
 
   private static validateHeaders(headers: string[]): void {
     const headerMap: Record<string, string> = {
-      'AKS-Code': 'aksCode',
-      'AKS Code': 'aksCode',
-      'AKS_Code': 'aksCode',
-      'KAS-Code': 'kasCode',
-      'KAS Code': 'kasCode',
-      'KAS_Code': 'kasCode',
-      'Feldname': 'fieldName',
-      'Field Name': 'fieldName',
-      'Field_Name': 'fieldName',
-      'Anzeigename': 'displayName',
-      'Display Name': 'displayName',
-      'Display_Name': 'displayName',
-      'Feldtyp': 'fieldType',
-      'Field Type': 'fieldType',
-      'Field_Type': 'fieldType',
-      'Datentyp': 'dataType',
-      'Data Type': 'dataType',
-      'Data_Type': 'dataType',
-      'Einheit': 'unit',
-      'Unit': 'unit',
-      'Pflichtfeld': 'isRequired',
-      'Required': 'isRequired',
-      'Is Required': 'isRequired',
-      'Is_Required': 'isRequired'
+      'AKS-Code': 'aks_code',
+      'AKS Code': 'aks_code',
+      'AKS_Code': 'aks_code',
+      'AKS': 'aks_code',
+      'Name': 'name',
+      'Bezeichnung': 'name',
+      'Beschreibung': 'description',
+      'Description': 'description',
+      'Wartungsintervall': 'maintenance_interval_months',
+      'Wartungsintervall (Monate)': 'maintenance_interval_months',
+      'Maintenance Interval': 'maintenance_interval_months',
+      'Maintenance Interval (Months)': 'maintenance_interval_months',
+      'Intervall': 'maintenance_interval_months',
+      'Wartungstyp': 'maintenance_type',
+      'Maintenance Type': 'maintenance_type',
+      'Wartungsbeschreibung': 'maintenance_description',
+      'Maintenance Description': 'maintenance_description'
     };
 
-    const normalizedHeaders = headers.map(h => headerMap[h] || h);
+    const normalizedHeaders = headers.map(h => headerMap[h] || h.toLowerCase().replace(/[\s-]/g, '_'));
     
     const missingColumns = this.REQUIRED_COLUMNS.filter(
       col => !normalizedHeaders.includes(col)
@@ -122,7 +115,7 @@ export class AksImportService {
     }
   }
 
-  private static mapRowsToImportData(
+  private static mapRowsToAksCodeData(
     dataRows: string[][],
     headers: string[]
   ): AksImportRow[] {
@@ -139,23 +132,27 @@ export class AksImportService {
       if (row.some(cell => cell && cell.toString().trim())) { // Skip empty rows
         const importRow: AksImportRow = {
           row: index + 2, // Excel row number
-          aksCode: this.getCellValue(row, headerMap, 'aksCode'),
-          aksName: this.getCellValue(row, headerMap, 'aksName'),
-          kasCode: this.getCellValue(row, headerMap, 'kasCode'),
-          fieldName: this.getCellValue(row, headerMap, 'fieldName'),
-          displayName: this.getCellValue(row, headerMap, 'displayName'),
-          fieldType: this.getCellValue(row, headerMap, 'fieldType'),
-          dataType: this.getCellValue(row, headerMap, 'dataType'),
-          unit: this.getCellValue(row, headerMap, 'unit'),
-          isRequired: this.parseBoolean(this.getCellValue(row, headerMap, 'isRequired')),
-          minValue: this.parseNumber(this.getCellValue(row, headerMap, 'minValue')),
-          maxValue: this.parseNumber(this.getCellValue(row, headerMap, 'maxValue')),
-          minLength: this.parseNumber(this.getCellValue(row, headerMap, 'minLength')),
-          maxLength: this.parseNumber(this.getCellValue(row, headerMap, 'maxLength')),
-          regex: this.getCellValue(row, headerMap, 'regex'),
-          options: this.getCellValue(row, headerMap, 'options'),
-          defaultValue: this.getCellValue(row, headerMap, 'defaultValue'),
-          helpText: this.getCellValue(row, headerMap, 'helpText')
+          aksCode: this.getCellValue(row, headerMap, 'aks_code'),
+          aksName: this.getCellValue(row, headerMap, 'name'),
+          description: this.getCellValue(row, headerMap, 'description'),
+          maintenanceIntervalMonths: this.parseNumber(this.getCellValue(row, headerMap, 'maintenance_interval_months')),
+          maintenanceType: this.getCellValue(row, headerMap, 'maintenance_type'),
+          maintenanceDescription: this.getCellValue(row, headerMap, 'maintenance_description'),
+          kasCode: '',
+          fieldName: '',
+          displayName: '',
+          fieldType: '',
+          dataType: '',
+          unit: '',
+          isRequired: false,
+          minValue: undefined,
+          maxValue: undefined,
+          minLength: undefined,
+          maxLength: undefined,
+          regex: '',
+          options: '',
+          defaultValue: '',
+          helpText: ''
         };
 
         rows.push(importRow);
@@ -167,58 +164,26 @@ export class AksImportService {
 
   private static normalizeHeader(header: string): string {
     const headerMap: Record<string, string> = {
-      'AKS-Code': 'aksCode',
-      'AKS Code': 'aksCode',
-      'AKS_Code': 'aksCode',
-      'AKS-Name': 'aksName',
-      'AKS Name': 'aksName',
-      'AKS_Name': 'aksName',
-      'KAS-Code': 'kasCode',
-      'KAS Code': 'kasCode',
-      'KAS_Code': 'kasCode',
-      'Feldname': 'fieldName',
-      'Field Name': 'fieldName',
-      'Field_Name': 'fieldName',
-      'Anzeigename': 'displayName',
-      'Display Name': 'displayName',
-      'Display_Name': 'displayName',
-      'Feldtyp': 'fieldType',
-      'Field Type': 'fieldType',
-      'Field_Type': 'fieldType',
-      'Datentyp': 'dataType',
-      'Data Type': 'dataType',
-      'Data_Type': 'dataType',
-      'Einheit': 'unit',
-      'Unit': 'unit',
-      'Pflichtfeld': 'isRequired',
-      'Required': 'isRequired',
-      'Is Required': 'isRequired',
-      'Is_Required': 'isRequired',
-      'Min Wert': 'minValue',
-      'Min Value': 'minValue',
-      'Min_Value': 'minValue',
-      'Max Wert': 'maxValue',
-      'Max Value': 'maxValue',
-      'Max_Value': 'maxValue',
-      'Min Länge': 'minLength',
-      'Min Length': 'minLength',
-      'Min_Length': 'minLength',
-      'Max Länge': 'maxLength',
-      'Max Length': 'maxLength',
-      'Max_Length': 'maxLength',
-      'Regex': 'regex',
-      'Pattern': 'regex',
-      'Optionen': 'options',
-      'Options': 'options',
-      'Standardwert': 'defaultValue',
-      'Default Value': 'defaultValue',
-      'Default_Value': 'defaultValue',
-      'Hilfetext': 'helpText',
-      'Help Text': 'helpText',
-      'Help_Text': 'helpText'
+      'AKS-Code': 'aks_code',
+      'AKS Code': 'aks_code',
+      'AKS_Code': 'aks_code',
+      'AKS': 'aks_code',
+      'Name': 'name',
+      'Bezeichnung': 'name',
+      'Beschreibung': 'description',
+      'Description': 'description',
+      'Wartungsintervall': 'maintenance_interval_months',
+      'Wartungsintervall (Monate)': 'maintenance_interval_months',
+      'Maintenance Interval': 'maintenance_interval_months',
+      'Maintenance Interval (Months)': 'maintenance_interval_months',
+      'Intervall': 'maintenance_interval_months',
+      'Wartungstyp': 'maintenance_type',
+      'Maintenance Type': 'maintenance_type',
+      'Wartungsbeschreibung': 'maintenance_description',
+      'Maintenance Description': 'maintenance_description'
     };
 
-    return headerMap[header] || header.toLowerCase().replace(/[\s-_]/g, '');
+    return headerMap[header] || header.toLowerCase().replace(/[\s-]/g, '_');
   }
 
   private static getCellValue(
@@ -268,45 +233,61 @@ export class AksImportService {
 
       // Check if AKS code exists
       let aksCodeData = await AksService.getAksCodeByCode(aksCode);
+      const firstRow = rows[0];
       
       if (!aksCodeData) {
+        // Validate AKS code format
+        if (!this.validateAksCodeFormat(aksCode)) {
+          throw new Error(`Invalid AKS code format: ${aksCode}. Expected format: AKS.XX.XXX.XX.XX`);
+        }
+
         // Create new AKS code
-        const firstRow = rows[0];
         aksCodeData = await AksService.createAksCode({
           code: aksCode,
           name: firstRow.aksName || aksCode,
-          description: `Imported from Excel on ${new Date().toISOString()}`,
-          category: this.extractCategory(aksCode)
+          description: firstRow.description || `Imported from Excel on ${new Date().toISOString()}`,
+          category: this.extractCategory(aksCode),
+          maintenance_interval_months: firstRow.maintenanceIntervalMonths,
+          maintenance_type: firstRow.maintenanceType || 'standard',
+          maintenance_description: firstRow.maintenanceDescription
         });
         result.createdCodes++;
+        result.successfulImports++;
       } else {
+        // Update existing AKS code with maintenance data
+        await AksService.updateAksCode(aksCodeData.id, {
+          name: firstRow.aksName || aksCodeData.name,
+          description: firstRow.description || aksCodeData.description,
+          maintenance_interval_months: firstRow.maintenanceIntervalMonths,
+          maintenance_type: firstRow.maintenanceType || 'standard',
+          maintenance_description: firstRow.maintenanceDescription
+        });
         result.updatedCodes++;
-      }
-
-      // Process fields for this AKS code
-      for (const row of rows) {
-        try {
-          await this.processAksField(aksCodeData.id, row, result);
-          result.successfulImports++;
-        } catch (error) {
-          result.failedImports++;
-          result.errors.push({
-            row: row.row,
-            aksCode: row.aksCode,
-            kasCode: row.kasCode,
-            message: error.message
-          });
-        }
+        result.successfulImports++;
       }
 
       await client.query('COMMIT');
 
     } catch (error) {
       await client.query('ROLLBACK');
-      throw error;
+      result.failedImports++;
+      result.errors.push({
+        row: rows[0].row,
+        aksCode,
+        message: error.message
+      });
     } finally {
       client.release();
     }
+  }
+
+  private static validateAksCodeFormat(aksCode: string): boolean {
+    // Check if AKS code matches hierarchical pattern:
+    // Level 1: AKS.XX (e.g., AKS.01)
+    // Level 2: AKS.XX.XXX (e.g., AKS.01.002)
+    // Level 3: AKS.XX.XXX.XX (e.g., AKS.01.002.01)
+    // Level 4: AKS.XX.XXX.XX.XX (e.g., AKS.01.002.01.01)
+    return /^AKS\.(\d{2}|\d{2}\.\d{3}|\d{2}\.\d{3}\.\d{2}|\d{2}\.\d{3}\.\d{2}\.\d{2})$/.test(aksCode);
   }
 
   private static parseNumericValue(value: string | number | undefined): number | undefined {
@@ -320,143 +301,9 @@ export class AksImportService {
     return isNaN(parsed) ? undefined : parsed;
   }
 
-  private static async processAksField(
-    aksCodeId: string,
-    row: AksImportRow,
-    result: AksImportResult
-  ): Promise<void> {
-    // Validate field type and data type
-    const fieldType = this.mapFieldType(row.fieldType);
-    const dataType = this.mapDataType(row.dataType);
-
-    if (!fieldType) {
-      throw new Error(`Invalid field type: ${row.fieldType}`);
-    }
-
-    if (!dataType) {
-      throw new Error(`Invalid data type: ${row.dataType}`);
-    }
-
-    // Parse options if present
-    let options = undefined;
-    if (row.options && (fieldType === AksFieldType.SELECT || fieldType === AksFieldType.RADIO)) {
-      options = this.parseOptions(row.options);
-    }
-
-    // Check if field exists
-    const existingField = await pool.query(
-      'SELECT id FROM aks_fields WHERE aks_code_id = $1 AND kas_code = $2',
-      [aksCodeId, row.kasCode]
-    );
-
-    if (existingField.rows.length > 0) {
-      // Update existing field
-      await AksService.updateAksField(existingField.rows[0].id, {
-        displayName: row.displayName || row.fieldName,
-        isRequired: row.isRequired as boolean,
-        minValue: this.parseNumericValue(row.minValue),
-        maxValue: this.parseNumericValue(row.maxValue),
-        minLength: this.parseNumericValue(row.minLength),
-        maxLength: this.parseNumericValue(row.maxLength),
-        regex: row.regex,
-        options,
-        defaultValue: row.defaultValue,
-        helpText: row.helpText
-      });
-      result.updatedFields++;
-    } else {
-      // Create new field
-      await AksService.createAksField(aksCodeId, {
-        kasCode: row.kasCode,
-        fieldName: row.fieldName,
-        displayName: row.displayName || row.fieldName,
-        fieldType,
-        dataType,
-        unit: row.unit,
-        isRequired: row.isRequired as boolean,
-        minValue: this.parseNumericValue(row.minValue),
-        maxValue: this.parseNumericValue(row.maxValue),
-        minLength: this.parseNumericValue(row.minLength),
-        maxLength: this.parseNumericValue(row.maxLength),
-        regex: row.regex,
-        options,
-        defaultValue: row.defaultValue,
-        helpText: row.helpText,
-        order: result.createdFields + result.updatedFields
-      });
-      result.createdFields++;
-    }
-  }
-
-  private static mapFieldType(type: string): AksFieldType | null {
-    const typeMap: Record<string, AksFieldType> = {
-      'text': AksFieldType.TEXT,
-      'number': AksFieldType.NUMBER,
-      'zahl': AksFieldType.NUMBER,
-      'date': AksFieldType.DATE,
-      'datum': AksFieldType.DATE,
-      'boolean': AksFieldType.BOOLEAN,
-      'bool': AksFieldType.BOOLEAN,
-      'ja/nein': AksFieldType.BOOLEAN,
-      'select': AksFieldType.SELECT,
-      'auswahl': AksFieldType.SELECT,
-      'multiselect': AksFieldType.MULTISELECT,
-      'mehrfachauswahl': AksFieldType.MULTISELECT,
-      'textarea': AksFieldType.TEXTAREA,
-      'textfeld': AksFieldType.TEXTAREA,
-      'file': AksFieldType.FILE,
-      'datei': AksFieldType.FILE,
-      'radio': AksFieldType.RADIO,
-      'checkbox': AksFieldType.CHECKBOX
-    };
-
-    return typeMap[type.toLowerCase()] || null;
-  }
-
-  private static mapDataType(type: string): AksDataType | null {
-    const typeMap: Record<string, AksDataType> = {
-      'string': AksDataType.STRING,
-      'text': AksDataType.STRING,
-      'integer': AksDataType.INTEGER,
-      'int': AksDataType.INTEGER,
-      'ganzzahl': AksDataType.INTEGER,
-      'decimal': AksDataType.DECIMAL,
-      'dezimal': AksDataType.DECIMAL,
-      'float': AksDataType.DECIMAL,
-      'double': AksDataType.DECIMAL,
-      'date': AksDataType.DATE,
-      'datum': AksDataType.DATE,
-      'boolean': AksDataType.BOOLEAN,
-      'bool': AksDataType.BOOLEAN,
-      'json': AksDataType.JSON
-    };
-
-    return typeMap[type.toLowerCase()] || null;
-  }
-
-  private static parseOptions(optionsStr: string): any[] {
-    // Try to parse as JSON first
-    try {
-      const parsed = JSON.parse(optionsStr);
-      if (Array.isArray(parsed)) {
-        return parsed;
-      }
-    } catch (e) {
-      // Not JSON, try other formats
-    }
-
-    // Parse comma-separated values
-    const options = optionsStr.split(/[,;|]/).map((opt, index) => ({
-      value: opt.trim(),
-      label: opt.trim(),
-      order: index + 1
-    }));
-
-    return options.filter(opt => opt.value);
-  }
 
   private static extractCategory(aksCode: string): string {
-    // Extract category from AKS code pattern (e.g., AKS.03.xxx.xx.xx -> 03)
+    // Extract category from AKS code pattern (e.g., AKS.03 -> 03, AKS.03.330.01 -> 03)
     const parts = aksCode.split('.');
     if (parts.length >= 2) {
       const categoryMap: Record<string, string> = {
@@ -473,6 +320,106 @@ export class AksImportService {
       return categoryMap[parts[1]] || 'Sonstiges';
     }
     return 'Sonstiges';
+  }
+
+  static async generateImportTemplate(): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('AKS Import Template');
+
+    // Header
+    worksheet.columns = [
+      { header: 'AKS-Code', key: 'aks_code', width: 25 },
+      { header: 'Name', key: 'name', width: 40 },
+      { header: 'Beschreibung', key: 'description', width: 50 },
+      { header: 'Wartungsintervall (Monate)', key: 'maintenance_interval_months', width: 25 },
+      { header: 'Wartungstyp', key: 'maintenance_type', width: 20 },
+      { header: 'Wartungsbeschreibung', key: 'maintenance_description', width: 50 }
+    ];
+
+    // Style header
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF4472C4' }
+    };
+    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+    // Add sample data
+    worksheet.addRow({
+      aks_code: 'AKS.03.470.07.03',
+      name: 'Enthärtungsanlage',
+      description: 'Wasserenthärtung für Gebäudetechnik',
+      maintenance_interval_months: 12,
+      maintenance_type: 'jährlich',
+      maintenance_description: 'Jährliche Wartung und Funktionskontrolle'
+    });
+    
+    worksheet.addRow({
+      aks_code: 'AKS.02.310.01.01',
+      name: 'Lüftungsanlage',
+      description: 'Raumlufttechnische Anlage',
+      maintenance_interval_months: 6,
+      maintenance_type: 'halbjährlich',
+      maintenance_description: 'Halbjährliche Filter- und Funktionskontrolle'
+    });
+
+    // Add instructions worksheet
+    const instructionsSheet = workbook.addWorksheet('Anweisungen');
+    instructionsSheet.columns = [
+      { header: 'Spalte', key: 'column', width: 30 },
+      { header: 'Beschreibung', key: 'description', width: 60 },
+      { header: 'Beispiel', key: 'example', width: 30 }
+    ];
+
+    // Style instructions header
+    instructionsSheet.getRow(1).font = { bold: true };
+    instructionsSheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF70AD47' }
+    };
+    instructionsSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+    // Add instructions
+    const instructions = [
+      {
+        column: 'AKS-Code',
+        description: 'Eindeutiger AKS-Code im Format AKS.XX.XXX.XX.XX',
+        example: 'AKS.03.470.07.03'
+      },
+      {
+        column: 'Name',
+        description: 'Kurzer Name der Anlage oder des Systems',
+        example: 'Enthärtungsanlage'
+      },
+      {
+        column: 'Beschreibung',
+        description: 'Detaillierte Beschreibung der Anlage (optional)',
+        example: 'Wasserenthärtung für Gebäudetechnik'
+      },
+      {
+        column: 'Wartungsintervall (Monate)',
+        description: 'Wartungsintervall in Monaten (1-120)',
+        example: '12'
+      },
+      {
+        column: 'Wartungstyp',
+        description: 'Art der Wartung (optional)',
+        example: 'jährlich, halbjährlich, monatlich'
+      },
+      {
+        column: 'Wartungsbeschreibung',
+        description: 'Beschreibung der durchzuführenden Wartung (optional)',
+        example: 'Jährliche Wartung und Funktionskontrolle'
+      }
+    ];
+
+    instructions.forEach(instruction => {
+      instructionsSheet.addRow(instruction);
+    });
+
+    return Buffer.from(await workbook.xlsx.writeBuffer());
   }
 
   static async generateAksErrorReport(errors: AksImportError[]): Promise<Buffer> {

@@ -10,10 +10,8 @@ const Anlagen: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('');
 
   const { data, isLoading, error } = useQuery(
-    ['anlagen', page, search, statusFilter],
+    ['anlagen', search, statusFilter],
     () => anlageService.getAnlagen({
-      page,
-      limit: 20,
       search: search || undefined,
       status: statusFilter || undefined,
     }),
@@ -24,7 +22,7 @@ const Anlagen: React.FC = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setPage(1);
+    // Search wird automatisch durch React Query getriggert
   };
 
   if (isLoading) {
@@ -48,7 +46,7 @@ const Anlagen: React.FC = () => {
       <div className="md:flex md:items-center md:justify-between">
         <div className="flex-1 min-w-0">
           <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-            Anlagen ({data?.pagination.total || 0})
+            Anlagen ({data?.length || 0})
           </h2>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4">
@@ -125,30 +123,22 @@ const Anlagen: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {data?.data.map((anlage) => (
+              {data?.map((anlage) => (
                 <tr key={anlage.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900">
-                        {anlage.bezeichnung}
+                        {anlage.name}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {anlage.anlagen_nummer}
+                        {anlage.t_nummer || 'Keine T-Nummer'}
                       </div>
-                      {anlage.hersteller && (
-                        <div className="text-sm text-gray-500">
-                          {anlage.hersteller} {anlage.modell}
-                        </div>
-                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <div>
-                      <div>{anlage.liegenschaft}</div>
-                      <div className="text-gray-500">{anlage.objekt}</div>
-                      {anlage.standort && (
-                        <div className="text-gray-500">{anlage.standort}</div>
-                      )}
+                      <div>{anlage.liegenschaft_name}</div>
+                      <div className="text-gray-500">{anlage.objekt_name}</div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -158,17 +148,14 @@ const Anlagen: React.FC = () => {
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                       anlage.status === 'aktiv' ? 'bg-green-100 text-green-800' :
                       anlage.status === 'wartung' ? 'bg-yellow-100 text-yellow-800' :
-                      anlage.status === 'störung' ? 'bg-red-100 text-red-800' :
+                      anlage.status === 'defekt' ? 'bg-red-100 text-red-800' :
                       'bg-gray-100 text-gray-800'
                     }`}>
                       {anlage.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {anlage.naechste_wartung ? 
-                      new Date(anlage.naechste_wartung).toLocaleDateString('de-DE') : 
-                      '-'
-                    }
+                    -
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <Link
@@ -179,83 +166,16 @@ const Anlagen: React.FC = () => {
                     </Link>
                   </td>
                 </tr>
-              ))}
+              )) || (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                    Keine Anlagen gefunden
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
-
-        {/* Pagination */}
-        {data && data.pagination.totalPages > 1 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <button
-                onClick={() => setPage(Math.max(1, page - 1))}
-                disabled={page === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-              >
-                Zurück
-              </button>
-              <button
-                onClick={() => setPage(Math.min(data.pagination.totalPages, page + 1))}
-                disabled={page === data.pagination.totalPages}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-              >
-                Weiter
-              </button>
-            </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Zeige{' '}
-                  <span className="font-medium">
-                    {(page - 1) * 20 + 1}
-                  </span>{' '}
-                  bis{' '}
-                  <span className="font-medium">
-                    {Math.min(page * 20, data.pagination.total)}
-                  </span>{' '}
-                  von{' '}
-                  <span className="font-medium">{data.pagination.total}</span>{' '}
-                  Ergebnissen
-                </p>
-              </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                  <button
-                    onClick={() => setPage(Math.max(1, page - 1))}
-                    disabled={page === 1}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    Zurück
-                  </button>
-                  {Array.from({ length: Math.min(data.pagination.totalPages, 5) }, (_, i) => {
-                    const pageNum = i + 1;
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => setPage(pageNum)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                          page === pageNum
-                            ? 'z-10 bg-primary-50 border-primary-500 text-primary-600'
-                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                  <button
-                    onClick={() => setPage(Math.min(data.pagination.totalPages, page + 1))}
-                    disabled={page === data.pagination.totalPages}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    Weiter
-                  </button>
-                </nav>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -33,16 +33,22 @@ const aksUpload = multer({
 
 // Validation schemas
 const createAksCodeSchema = Joi.object({
-  code: Joi.string().pattern(/^AKS\.\d{2}\.\d{3}\.\d{2}\.\d{2}$/).required(),
+  code: Joi.string().pattern(/^AKS\.(\d{2}|\d{2}\.\d{3}|\d{2}\.\d{3}\.\d{2}|\d{2}\.\d{3}\.\d{2}\.\d{2})$/).required(),
   name: Joi.string().min(3).max(255).required(),
   description: Joi.string().max(1000).optional(),
-  category: Joi.string().max(100).optional()
+  category: Joi.string().max(100).optional(),
+  maintenance_interval_months: Joi.number().integer().min(1).max(120).optional(),
+  maintenance_type: Joi.string().max(50).optional(),
+  maintenance_description: Joi.string().max(500).optional()
 });
 
 const updateAksCodeSchema = Joi.object({
   name: Joi.string().min(3).max(255).optional(),
   description: Joi.string().max(1000).optional().allow(null),
   category: Joi.string().max(100).optional().allow(null),
+  maintenance_interval_months: Joi.number().integer().min(1).max(120).optional().allow(null),
+  maintenance_type: Joi.string().max(50).optional().allow(null),
+  maintenance_description: Joi.string().max(500).optional().allow(null),
   isActive: Joi.boolean().optional()
 });
 
@@ -88,9 +94,9 @@ const updateAksFieldSchema = Joi.object({
 });
 
 const searchAksSchema = Joi.object({
-  code: Joi.string().optional(),
-  name: Joi.string().optional(),
-  category: Joi.string().optional(),
+  code: Joi.string().allow('').optional(),
+  name: Joi.string().allow('').optional(),
+  category: Joi.string().allow('').optional(),
   hasFields: Joi.boolean().optional(),
   isActive: Joi.boolean().optional(),
   page: Joi.number().integer().min(1).default(1),
@@ -193,6 +199,98 @@ export class AksController {
       res.json({
         message: 'AKS code updated successfully',
         data: aksCode
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async deleteAksCode(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      await AksService.deleteAksCode(id);
+
+      res.json({
+        message: 'AKS code deleted successfully'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async toggleAksCodeStatus(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const aksCode = await AksService.toggleAksCodeStatus(id);
+
+      res.json({
+        message: `AKS code ${aksCode.isActive ? 'activated' : 'deactivated'} successfully`,
+        data: aksCode
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async bulkDeleteAksCodes(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { ids } = req.body;
+      
+      if (!Array.isArray(ids) || ids.length === 0) {
+        throw createError('No IDs provided for bulk delete', 400);
+      }
+
+      const results = await AksService.bulkDeleteAksCodes(ids);
+
+      res.json({
+        message: `Bulk delete completed`,
+        data: results
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async bulkToggleAksCodesStatus(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { ids, isActive } = req.body;
+      
+      if (!Array.isArray(ids) || ids.length === 0) {
+        throw createError('No IDs provided for bulk status update', 400);
+      }
+
+      if (typeof isActive !== 'boolean') {
+        throw createError('isActive must be a boolean value', 400);
+      }
+
+      const results = await AksService.bulkToggleAksCodesStatus(ids, isActive);
+
+      res.json({
+        message: `Bulk status update completed`,
+        data: results
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async bulkUpdateAksCodes(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { ids, updateData } = req.body;
+      
+      if (!Array.isArray(ids) || ids.length === 0) {
+        throw createError('No IDs provided for bulk update', 400);
+      }
+
+      if (!updateData || typeof updateData !== 'object') {
+        throw createError('Update data is required', 400);
+      }
+
+      const results = await AksService.bulkUpdateAksCodes(ids, updateData);
+
+      res.json({
+        message: `Bulk update completed`,
+        data: results
       });
     } catch (error) {
       next(error);
@@ -325,6 +423,19 @@ export class AksController {
     }
   }
 
+  // Download AKS import template
+  static async downloadImportTemplate(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const templateBuffer = await AksImportService.generateImportTemplate();
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="aks_import_template.xlsx"');
+      res.send(templateBuffer);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Download AKS import error report
   static async downloadAksErrorReport(req: AuthRequest, res: Response, next: NextFunction) {
     try {
@@ -396,6 +507,22 @@ export class AksController {
       res.json({
         message: 'Data types retrieved successfully',
         data: dataTypes
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Get AKS tree structure
+  static async getAksTree(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { parentCode } = req.query;
+      
+      const tree = await AksService.getAksTree(parentCode as string);
+
+      res.json({
+        message: 'AKS tree retrieved successfully',
+        data: tree
       });
     } catch (error) {
       next(error);

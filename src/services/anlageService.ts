@@ -329,4 +329,34 @@ export class AnlageService {
     const { rows } = await pool.query(query, values);
     return rows;
   }
+
+  static async getStatistics(mandantId: string): Promise<any> {
+    const query = `
+      SELECT 
+        COUNT(*) as total_anlagen,
+        COUNT(CASE WHEN a.status = 'aktiv' THEN 1 END) as aktive_anlagen,
+        COUNT(CASE WHEN a.status = 'wartung' THEN 1 END) as wartung_anlagen,
+        COUNT(CASE WHEN a.status = 'defekt' THEN 1 END) as defekte_anlagen,
+        AVG(a.zustands_bewertung) as durchschnittliche_bewertung
+      FROM anlagen a
+      JOIN objekte o ON a.objekt_id = o.id
+      JOIN liegenschaften l ON o.liegenschaft_id = l.id
+      WHERE l.mandant_id = $1 AND a.is_active = true
+    `;
+    
+    const { rows } = await pool.query(query, [mandantId]);
+    return rows[0] || {
+      total_anlagen: 0,
+      aktive_anlagen: 0,
+      wartung_anlagen: 0,
+      defekte_anlagen: 0,
+      durchschnittliche_bewertung: 0
+    };
+  }
+
+  static async getWarungenFaellig(mandantId: string): Promise<any[]> {
+    // Da wir noch keine Wartungstabelle haben, geben wir erstmal eine leere Liste zurück
+    // TODO: Implementierung wenn Wartungstabelle existiert
+    return [];
+  }
 }

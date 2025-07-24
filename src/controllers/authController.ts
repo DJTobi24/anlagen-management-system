@@ -3,6 +3,7 @@ import Joi from 'joi';
 import { AuthService } from '@/services/authService';
 import { AuthRequest } from '@/types';
 import { createError } from '@/middleware/errorHandler';
+import pool from '@/config/database';
 
 const loginSchema = Joi.object({
   email: Joi.string().email().required(),
@@ -97,9 +98,37 @@ export class AuthController {
 
       const { password, ...userWithoutPassword } = req.user;
 
+      // Get mandant information for the user
+      const mandantQuery = await pool.query(
+        'SELECT id, name, description, is_active, created_at, updated_at FROM mandanten WHERE id = $1',
+        [userWithoutPassword.mandantId]
+      );
+      const mandant = mandantQuery.rows[0];
+
+      // Transform backend data to match frontend expectations
+      const transformedUser = {
+        id: userWithoutPassword.id,
+        email: userWithoutPassword.email,
+        name: `${userWithoutPassword.firstName} ${userWithoutPassword.lastName}`,
+        rolle: userWithoutPassword.role, // role -> rolle
+        mandant_id: userWithoutPassword.mandantId,
+        mandant: mandant ? {
+          id: mandant.id,
+          name: mandant.name,
+          code: mandant.name.substring(0, 3).toUpperCase(), // Generate code from name
+          beschreibung: mandant.description,
+          aktiv: mandant.is_active,
+          created_at: mandant.created_at,
+          updated_at: mandant.updated_at
+        } : undefined,
+        aktiv: userWithoutPassword.isActive, // is_active -> aktiv
+        created_at: userWithoutPassword.createdAt,
+        updated_at: userWithoutPassword.updatedAt
+      };
+
       res.json({
         message: 'User profile retrieved successfully',
-        data: userWithoutPassword
+        data: transformedUser
       });
     } catch (error) {
       next(error);

@@ -46,8 +46,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       const response = await authService.login(email, password);
-      localStorage.setItem('auth_token', response.token);
-      setUser(response.user);
+      localStorage.setItem('auth_token', response.accessToken);
+      localStorage.setItem('refresh_token', response.refreshToken);
+      
+      // Get user data after successful login
+      const userData = await authService.getCurrentUser();
+      setUser(userData);
+      
       toast.success('Erfolgreich angemeldet!');
       return true;
     } catch (error: any) {
@@ -60,6 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('refresh_token');
     setUser(null);
     toast.success('Erfolgreich abgemeldet');
   };

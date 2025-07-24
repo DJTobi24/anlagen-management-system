@@ -3,14 +3,12 @@ import { Anlage, PaginatedResponse, Statistics, ApiResponse } from '../types';
 
 export const anlageService = {
   async getAnlagen(params?: {
-    page?: number;
-    limit?: number;
     search?: string;
     status?: string;
     aks_code?: string;
-  }): Promise<PaginatedResponse<Anlage>> {
-    const response = await api.get<PaginatedResponse<Anlage>>('/anlagen', { params });
-    return response.data;
+  }): Promise<Anlage[]> {
+    const response = await api.get<ApiResponse<Anlage[]>>('/anlagen', { params });
+    return response.data.data;
   },
 
   async getAnlage(id: string): Promise<Anlage> {

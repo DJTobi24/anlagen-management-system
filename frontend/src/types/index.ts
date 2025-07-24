@@ -2,7 +2,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  rolle: 'admin' | 'manager' | 'techniker' | 'viewer';
+  rolle: 'admin' | 'techniker' | 'aufnehmer';
   mandant_id: string;
   mandant?: Mandant;
   aktiv: boolean;
@@ -22,25 +22,18 @@ export interface Mandant {
 
 export interface Anlage {
   id: string;
-  anlagen_nummer: string;
-  bezeichnung: string;
-  liegenschaft: string;
-  objekt: string;
+  name: string;
+  t_nummer?: string;
   aks_code: string;
-  hersteller?: string;
-  modell?: string;
-  seriennummer?: string;
-  baujahr?: number;
-  letzte_wartung?: string;
-  naechste_wartung?: string;
-  status: 'aktiv' | 'wartung' | 'störung' | 'außer Betrieb';
-  mandant_id: string;
-  wartungsintervall_monate?: number;
-  anschaffungswert?: number;
-  standort?: string;
-  verantwortlicher?: string;
-  bemerkungen?: string;
+  description?: string;
+  status: 'aktiv' | 'wartung' | 'defekt' | 'inaktiv';
+  zustands_bewertung: number;
+  objekt_id: string;
+  objekt_name?: string;
+  liegenschaft_name?: string;
   qr_code?: string;
+  dynamic_fields?: Record<string, any>;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }

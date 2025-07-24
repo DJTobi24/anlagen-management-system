@@ -7,8 +7,11 @@ import {
   DocumentArrowUpIcon,
   UsersIcon,
   BuildingOfficeIcon,
+  BuildingOffice2Icon,
   Bars3Icon,
   XMarkIcon,
+  QrCodeIcon,
+  ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -19,11 +22,14 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: HomeIcon },
     { name: 'Anlagen', href: '/anlagen', icon: BuildingOfficeIcon },
+    { name: 'Liegenschaften', href: '/liegenschaften', icon: BuildingOffice2Icon },
+    { name: 'FM-Datenaufnahme', href: '/fm-data-collection', icon: ClipboardDocumentListIcon },
     { name: 'Import', href: '/import', icon: DocumentArrowUpIcon },
   ];
 
-  if (user?.rolle === 'admin' || user?.rolle === 'manager') {
+  if (user?.rolle === 'admin') {
     navigation.push(
+      { name: 'AKS-Verwaltung', href: '/aks', icon: QrCodeIcon },
       { name: 'Benutzer', href: '/users', icon: UsersIcon },
       { name: 'Einstellungen', href: '/settings', icon: CogIcon }
     );

@@ -2,8 +2,8 @@ import { api } from './api';
 import { User, ApiResponse } from '../types';
 
 interface LoginResponse {
-  token: string;
-  user: User;
+  accessToken: string;
+  refreshToken: string;
 }
 
 export const authService = {

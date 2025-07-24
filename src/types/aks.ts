@@ -5,6 +5,13 @@ export interface AksCode {
   description?: string;
   category?: string;
   isActive: boolean;
+  level?: number;
+  parentCode?: string;
+  isCategory?: boolean;
+  sortOrder?: number;
+  maintenanceIntervalMonths?: number;
+  maintenanceType?: string;
+  maintenanceDescription?: string;
   fields: AksField[];
   createdAt: Date;
   updatedAt: Date;
@@ -94,6 +101,11 @@ export interface AksImportRow {
   row: number;
   aksCode: string;
   aksName?: string;
+  description?: string;
+  maintenanceIntervalMonths?: number;
+  maintenanceType?: string;
+  maintenanceDescription?: string;
+  // Legacy field import support
   kasCode: string;
   fieldName: string;
   displayName?: string;
@@ -120,6 +132,11 @@ export interface AksImportResult {
   createdFields: number;
   updatedFields: number;
   errors: AksImportError[];
+  importSummary?: {
+    filename?: string;
+    importedAt: Date;
+    processingTime?: number;
+  };
 }
 
 export interface AksImportError {

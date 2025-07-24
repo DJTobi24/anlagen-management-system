@@ -46,19 +46,19 @@ const AnlageDetail: React.FC = () => {
               <ArrowLeftIcon className="h-6 w-6" />
             </Link>
             <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-              {anlage.bezeichnung}
+              {anlage.name}
             </h2>
             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
               anlage.status === 'aktiv' ? 'bg-green-100 text-green-800' :
               anlage.status === 'wartung' ? 'bg-yellow-100 text-yellow-800' :
-              anlage.status === 'störung' ? 'bg-red-100 text-red-800' :
+              anlage.status === 'defekt' ? 'bg-red-100 text-red-800' :
               'bg-gray-100 text-gray-800'
             }`}>
               {anlage.status}
             </span>
           </div>
           <p className="mt-1 text-sm text-gray-500">
-            {anlage.anlagen_nummer}
+            {anlage.t_nummer || 'Keine T-Nummer'}
           </p>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4">
@@ -82,7 +82,7 @@ const AnlageDetail: React.FC = () => {
             <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
               <div>
                 <dt className="text-sm font-medium text-gray-500">Anlagen-Nummer</dt>
-                <dd className="mt-1 text-sm text-gray-900">{anlage.anlagen_nummer}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{anlage.t_nummer || 'Keine T-Nummer'}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-gray-500">AKS-Code</dt>
@@ -90,67 +90,23 @@ const AnlageDetail: React.FC = () => {
               </div>
               <div>
                 <dt className="text-sm font-medium text-gray-500">Liegenschaft</dt>
-                <dd className="mt-1 text-sm text-gray-900">{anlage.liegenschaft}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{anlage.liegenschaft_name}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-gray-500">Objekt</dt>
-                <dd className="mt-1 text-sm text-gray-900">{anlage.objekt}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{anlage.objekt_name}</dd>
               </div>
-              {anlage.standort && (
+              {anlage.description && (
                 <div>
-                  <dt className="text-sm font-medium text-gray-500">Standort</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{anlage.standort}</dd>
+                  <dt className="text-sm font-medium text-gray-500">Beschreibung</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{anlage.description}</dd>
                 </div>
               )}
-              {anlage.hersteller && (
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Hersteller</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{anlage.hersteller}</dd>
-                </div>
-              )}
-              {anlage.modell && (
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Modell</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{anlage.modell}</dd>
-                </div>
-              )}
-              {anlage.seriennummer && (
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Seriennummer</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{anlage.seriennummer}</dd>
-                </div>
-              )}
-              {anlage.baujahr && (
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Baujahr</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{anlage.baujahr}</dd>
-                </div>
-              )}
-              {anlage.anschaffungswert && (
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Anschaffungswert</dt>
-                  <dd className="mt-1 text-sm text-gray-900">
-                    {new Intl.NumberFormat('de-DE', {
-                      style: 'currency',
-                      currency: 'EUR',
-                    }).format(anlage.anschaffungswert)}
-                  </dd>
-                </div>
-              )}
-              {anlage.verantwortlicher && (
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Verantwortlicher</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{anlage.verantwortlicher}</dd>
-                </div>
-              )}
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Zustandsbewertung</dt>
+                <dd className="mt-1 text-sm text-gray-900">{anlage.zustands_bewertung}/5</dd>
+              </div>
             </dl>
-            
-            {anlage.bemerkungen && (
-              <div className="mt-6">
-                <dt className="text-sm font-medium text-gray-500">Bemerkungen</dt>
-                <dd className="mt-1 text-sm text-gray-900">{anlage.bemerkungen}</dd>
-              </div>
-            )}
           </div>
         </div>
 
@@ -160,32 +116,9 @@ const AnlageDetail: React.FC = () => {
             <h3 className="text-lg font-medium text-gray-900 mb-4">
               Wartung
             </h3>
-            <dl className="space-y-4">
-              {anlage.letzte_wartung && (
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Letzte Wartung</dt>
-                  <dd className="mt-1 text-sm text-gray-900">
-                    {new Date(anlage.letzte_wartung).toLocaleDateString('de-DE')}
-                  </dd>
-                </div>
-              )}
-              {anlage.naechste_wartung && (
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Nächste Wartung</dt>
-                  <dd className="mt-1 text-sm text-gray-900">
-                    {new Date(anlage.naechste_wartung).toLocaleDateString('de-DE')}
-                  </dd>
-                </div>
-              )}
-              {anlage.wartungsintervall_monate && (
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Wartungsintervall</dt>
-                  <dd className="mt-1 text-sm text-gray-900">
-                    {anlage.wartungsintervall_monate} Monate
-                  </dd>
-                </div>
-              )}
-            </dl>
+            <p className="text-sm text-gray-500">
+              Wartungsinformationen sind noch nicht verfügbar.
+            </p>
           </div>
 
           {/* QR-Code */}

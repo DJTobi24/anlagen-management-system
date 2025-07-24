@@ -217,24 +217,24 @@ const Dashboard: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {anlage.bezeichnung}
+                          {anlage.name}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {anlage.anlagen_nummer}
+                          {anlage.t_nummer || 'Keine T-Nummer'}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {anlage.liegenschaft} - {anlage.objekt}
+                      {anlage.liegenschaft_name} - {anlage.objekt_name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {anlage.naechste_wartung ? new Date(anlage.naechste_wartung).toLocaleDateString('de-DE') : '-'}
+                      -
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                         anlage.status === 'aktiv' ? 'bg-green-100 text-green-800' :
                         anlage.status === 'wartung' ? 'bg-yellow-100 text-yellow-800' :
-                        anlage.status === 'störung' ? 'bg-red-100 text-red-800' :
+                        anlage.status === 'defekt' ? 'bg-red-100 text-red-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
                         {anlage.status}

@@ -15,6 +15,7 @@ router.get('/data-types', AksController.getDataTypes);
 
 // Search and view AKS codes (all authenticated users)
 router.get('/search', AksController.searchAksCodes);
+router.get('/tree', AksController.getAksTree);
 router.get('/code/:code', AksController.getAksCode);
 router.get('/code/:code/mapping', AksController.getAksFieldMapping);
 
@@ -32,6 +33,37 @@ router.put(
   '/codes/:id',
   authorize(UserRole.ADMIN),
   AksController.updateAksCode
+);
+
+router.delete(
+  '/codes/:id',
+  authorize(UserRole.ADMIN),
+  AksController.deleteAksCode
+);
+
+router.patch(
+  '/codes/:id/toggle',
+  authorize(UserRole.ADMIN),
+  AksController.toggleAksCodeStatus
+);
+
+// Bulk operations
+router.post(
+  '/codes/bulk/delete',
+  authorize(UserRole.ADMIN),
+  AksController.bulkDeleteAksCodes
+);
+
+router.post(
+  '/codes/bulk/toggle',
+  authorize(UserRole.ADMIN),
+  AksController.bulkToggleAksCodesStatus
+);
+
+router.post(
+  '/codes/bulk/update',
+  authorize(UserRole.ADMIN),
+  AksController.bulkUpdateAksCodes
 );
 
 // Field management (admin only)
@@ -59,6 +91,13 @@ router.post(
   authorize(UserRole.ADMIN),
   AksController.uploadMiddleware,
   AksController.importAksFromExcel
+);
+
+// Download import template
+router.get(
+  '/import/template',
+  authorize(UserRole.ADMIN),
+  AksController.downloadImportTemplate
 );
 
 // Download error report
