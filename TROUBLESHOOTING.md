@@ -1,68 +1,51 @@
-# 🔧 Troubleshooting Guide - Anlagen-Management-System
+# Troubleshooting Guide - Anlagen-Management-System
 
-Ein umfassender Leitfaden zur Problembehandlung und Fehlerbehebung im Anlagen-Management-System.
-
-## 📋 Inhaltsverzeichnis
+## Inhaltsverzeichnis
 
 1. [Schnelle Hilfe](#schnelle-hilfe)
-2. [System-Probleme](#system-probleme)
-3. [Datenbank-Probleme](#datenbank-probleme)
-4. [Frontend-Probleme](#frontend-probleme)
-5. [Backend-Probleme](#backend-probleme)
-6. [Authentifizierung](#authentifizierung)
-7. [Performance-Probleme](#performance-probleme)
-8. [Import/Export-Probleme](#importexport-probleme)
-9. [QR-Scanner-Probleme](#qr-scanner-probleme)
-10. [Docker-Probleme](#docker-probleme)
-11. [Monitoring & Logs](#monitoring--logs)
-12. [Erweiterte Diagnose](#erweiterte-diagnose)
+2. [Server-Start-Probleme](#server-start-probleme)
+3. [Import-Probleme](#import-probleme)
+4. [Performance-Probleme](#performance-probleme)
+5. [Authentifizierungs-Probleme](#authentifizierungs-probleme)
+6. [Migrations-Probleme](#migrations-probleme)
+7. [Docker-Probleme](#docker-probleme)
+8. [Sicherheits-Probleme](#sicherheits-probleme)
+9. [Backup & Recovery](#backup--recovery)
+10. [Entwicklungs-Probleme](#entwicklungs-probleme)
+11. [Monitoring & Logging](#monitoring--logging)
+12. [Support-Kontakt](#support-kontakt)
 
 ---
 
-## 🚨 Schnelle Hilfe
-
-### System komplett neu starten
-```bash
-# Alle Container stoppen und neu starten
-docker-compose down -v
-docker-compose up -d
-
-# Warten bis alle Services bereit sind
-./scripts/verify-integration.sh
-```
+## Schnelle Hilfe
 
 ### Häufigste Probleme und Sofortlösungen
 
 | Problem | Sofortlösung |
 |---------|--------------|
-| Login funktioniert nicht | `docker-compose restart backend` |
-| Frontend lädt nicht | `docker-compose restart frontend` |
-| Database-Fehler | `docker-compose restart postgres` |
-| QR-Scanner startet nicht | HTTPS aktivieren: `HTTPS=true npm start` |
-| Import hängt | Worker neu starten: `docker-compose restart backend` |
+| Server startet nicht auf Port 3000 | `kill -9 $(lsof -t -i:3000)` |
+| Datenbank-Verbindung fehlgeschlagen | PostgreSQL prüfen: `systemctl status postgresql` |
+| Import schlägt fehl | Dateiformat prüfen (nur .xlsx), max. 50MB |
+| Login funktioniert nicht | Standard-Passwörter: Admin123!, User123! |
+| Performance-Probleme | Redis aktivieren, Worker erhöhen |
 
 ---
 
-## 🖥 System-Probleme
+## Server-Start-Probleme
 
-### Problem: Container starten nicht
+### Problem: Server startet nicht auf Port 3000
+**Fehlermeldung:** `EADDRINUSE: address already in use :::3000`
 
-**Symptome:**
-- `docker-compose up` schlägt fehl
-- Services zeigen Status "Exited" oder "Restarting"
-
-**Diagnose:**
+**Lösung:**
 ```bash
-# Container-Status prüfen
-docker-compose ps
+# Prozess auf Port 3000 finden
+lsof -i :3000
 
-# Logs aller Services anzeigen
-docker-compose logs
+# Prozess beenden
+kill -9 <PID>
 
-# Spezifische Service-Logs
-docker-compose logs backend
-docker-compose logs frontend
-docker-compose logs postgres
+# Oder automatisch
+kill -9 $(lsof -t -i:3000)
 ```
 
 **Lösungen:**
