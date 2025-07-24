@@ -13,8 +13,8 @@ jest.mock('react-router-dom', () => ({
 
 // Mock react-query
 jest.mock('react-query', () => ({
-  QueryClient: class {
-    constructor() {}
+  QueryClient: class MockQueryClient {
+    // Empty class for testing
   },
   QueryClientProvider: ({ children }: any) => <div>{children}</div>,
 }));
@@ -33,6 +33,14 @@ jest.mock('./contexts/AuthContext', () => ({
 describe('App Component', () => {
   test('renders without crashing', () => {
     render(<App />);
-    expect(screen.getByText('Route')).toBeInTheDocument();
+    // When no user is authenticated, the app should show the login form
+    expect(screen.getByText('Anlagen-Management-System')).toBeInTheDocument();
+  });
+  
+  test('renders login form when user is not authenticated', () => {
+    render(<App />);
+    expect(screen.getByPlaceholderText('E-Mail-Adresse')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Passwort')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Anmelden' })).toBeInTheDocument();
   });
 });

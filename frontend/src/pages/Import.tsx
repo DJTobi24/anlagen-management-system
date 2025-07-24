@@ -9,7 +9,7 @@ const Import: React.FC = () => {
   const [dragActive, setDragActive] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: importJobs, refetch } = useQuery(
+  const { data: importJobs } = useQuery(
     'import-jobs',
     importService.getImportJobs,
     {
