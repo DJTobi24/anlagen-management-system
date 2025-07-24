@@ -5,7 +5,7 @@
 TRUNCATE TABLE anlagen, users, mandanten, aks_codes RESTART IDENTITY CASCADE;
 
 -- AKS-Codes einfügen
-INSERT INTO aks_codes (code, bezeichnung, kategorie, aktiv) VALUES
+INSERT INTO aks_codes (code, name, category, is_active) VALUES
 ('110', 'Allgemeine elektrische Anlagen', 'Elektro', true),
 ('111', 'Niederspannungsanlagen', 'Elektro', true),
 ('112', 'Mittelspannungsanlagen', 'Elektro', true),
