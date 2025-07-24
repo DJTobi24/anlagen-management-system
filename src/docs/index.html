@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anlagen-Management-System API</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .header {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        h1 {
+            margin: 0 0 1rem 0;
+            color: #1a73e8;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        .info-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .info-card h3 {
+            margin-top: 0;
+            color: #1a73e8;
+        }
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: #1a73e8;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: #1557b0;
+        }
+        .endpoint-list {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .endpoint {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .endpoint:last-child {
+            border-bottom: none;
+        }
+        .method {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-right: 1rem;
+            min-width: 60px;
+            text-align: center;
+        }
+        .method.get { background: #61affe; color: white; }
+        .method.post { background: #49cc90; color: white; }
+        .method.put { background: #fca130; color: white; }
+        .method.delete { background: #f93e3e; color: white; }
+        .method.patch { background: #50e3c2; color: white; }
+        code {
+            background: #f0f0f0;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Anlagen-Management-System API</h1>
+            <p>Willkommen zur API-Dokumentation des Anlagen-Management-Systems. Diese API ermöglicht die Verwaltung von technischen Anlagen, Gebäuden und Liegenschaften.</p>
+            <br>
+            <a href="/api/v1/docs" class="btn">Zur interaktiven API-Dokumentation →</a>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-card">
+                <h3>🔐 Authentifizierung</h3>
+                <p>Die API verwendet JWT-Token für die Authentifizierung. Nach der Anmeldung erhalten Sie einen Token, der bei allen Anfragen im Header mitgesendet werden muss:</p>
+                <code>Authorization: Bearer &lt;token&gt;</code>
+            </div>
+            <div class="info-card">
+                <h3>📋 Basis-URL</h3>
+                <p>Alle API-Endpunkte sind unter folgender Basis-URL erreichbar:</p>
+                <code>http://localhost:3000/api/v1</code>
+                <br><br>
+                <p>Produktions-URL:</p>
+                <code>https://ams.swm.de/api/v1</code>
+            </div>
+            <div class="info-card">
+                <h3>🚀 Schnellstart</h3>
+                <p>1. Melden Sie sich mit Ihren Zugangsdaten an<br>
+                   2. Kopieren Sie den erhaltenen Token<br>
+                   3. Fügen Sie den Token in Swagger UI ein<br>
+                   4. Testen Sie die API-Endpunkte direkt</p>
+            </div>
+        </div>
+
+        <div class="endpoint-list">
+            <h2>Wichtige Endpunkte</h2>
+            
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <strong>/auth/login</strong> - Benutzer anmelden
+            </div>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <strong>/anlagen</strong> - Alle Anlagen abrufen
+            </div>
+            
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <strong>/anlagen</strong> - Neue Anlage erstellen
+            </div>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <strong>/liegenschaften</strong> - Alle Liegenschaften abrufen
+            </div>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <strong>/objekte</strong> - Alle Objekte abrufen
+            </div>
+            
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <strong>/import/upload</strong> - Excel-Import starten
+            </div>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <strong>/aks/tree</strong> - AKS-Hierarchie abrufen
+            </div>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <strong>/fm-data/liegenschaften</strong> - FM-Datenaufnahme starten
+            </div>
+        </div>
+    </div>
+</body>
+</html>

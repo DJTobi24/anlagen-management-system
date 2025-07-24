@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>AMS API Documentation</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+    .info {
+      color: #666;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+    .endpoint {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 5px;
+      border-left: 4px solid #007bff;
+    }
+    .method {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-weight: bold;
+      font-size: 12px;
+      margin-right: 10px;
+    }
+    .method-get { background: #61affe; color: white; }
+    .method-post { background: #49cc90; color: white; }
+    .method-put { background: #fca130; color: white; }
+    .method-delete { background: #f93e3e; color: white; }
+    .path {
+      font-family: monospace;
+      font-size: 14px;
+      color: #333;
+    }
+    .description {
+      color: #666;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    .try-it {
+      margin-top: 10px;
+      padding: 8px 16px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .try-it:hover {
+      background: #0056b3;
+    }
+    .section {
+      margin-bottom: 40px;
+    }
+    .section-title {
+      font-size: 24px;
+      color: #2c3e50;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #007bff;
+    }
+    .auth-info {
+      background: #e8f4fd;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      border-left: 4px solid #007bff;
+    }
+    code {
+      background: #f4f4f4;
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 13px;
+    }
+    .external-link {
+      color: #007bff;
+      text-decoration: none;
+    }
+    .external-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Anlagen-Management-System API</h1>
+    <div class="info">
+      <p>Version: 1.0.0</p>
+      <p>Das Anlagen-Management-System (AMS) ist eine umfassende Lösung zur Verwaltung von technischen Anlagen, Gebäuden und Liegenschaften.</p>
+    </div>
+
+    <div class="auth-info">
+      <strong>🔐 Authentifizierung erforderlich</strong><br>
+      Die API verwendet JWT (JSON Web Tokens). Nach der Anmeldung den Token im Header mitschicken:<br>
+      <code>Authorization: Bearer &lt;token&gt;</code>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">Authentication</h2>
+      
+      <div class="endpoint">
+        <span class="method method-post">POST</span>
+        <span class="path">/api/v1/auth/login</span>
+        <div class="description">Benutzer anmelden</div>
+        <button class="try-it" onclick="tryEndpoint('POST', '/api/v1/auth/login', {email: 'admin@swm.de', password: 'admin123'})">Ausprobieren</button>
+      </div>
+
+      <div class="endpoint">
+        <span class="method method-post">POST</span>
+        <span class="path">/api/v1/auth/refresh</span>
+        <div class="description">Token erneuern</div>
+        <button class="try-it" onclick="tryEndpoint('POST', '/api/v1/auth/refresh')">Ausprobieren</button>
+      </div>
+
+      <div class="endpoint">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/v1/auth/me</span>
+        <div class="description">Aktuellen Benutzer abrufen</div>
+        <button class="try-it" onclick="tryEndpoint('GET', '/api/v1/auth/me')">Ausprobieren</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">Anlagen</h2>
+      
+      <div class="endpoint">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/v1/anlagen</span>
+        <div class="description">Alle Anlagen abrufen</div>
+        <button class="try-it" onclick="tryEndpoint('GET', '/api/v1/anlagen')">Ausprobieren</button>
+      </div>
+
+      <div class="endpoint">
+        <span class="method method-post">POST</span>
+        <span class="path">/api/v1/anlagen</span>
+        <div class="description">Neue Anlage erstellen</div>
+        <button class="try-it" onclick="alert('Beispiel-Daten in der Konsole anzeigen')">Ausprobieren</button>
+      </div>
+
+      <div class="endpoint">
+        <span class="method method-get">GET</span>
+        <span class="path">/api/v1/anlagen/:id</span>
+        <div class="description">Anlage nach ID abrufen</div>
+        <button class="try-it" onclick="alert('ID erforderlich')">Ausprobieren</button>
+      </div>
+
+      <div class="endpoint">
+        <span class="method method-put">PUT</span>
+        <span class="path">/api/v1/anlagen/:id</span>
+        <div class="description">Anlage aktualisieren</div>
+        <button class="try-it" onclick="alert('ID erforderlich')">Ausprobieren</button>
+      </div>
+
+      <div class="endpoint">
+        <span class="method method-delete">DELETE</span>
+        <span class="path">/api/v1/anlagen/:id</span>
+        <div class="description">Anlage löschen</div>
+        <button class="try-it" onclick="alert('ID erforderlich')">Ausprobieren</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">Weitere Dokumentation</h2>
+      <p>Für die vollständige interaktive API-Dokumentation verwenden Sie bitte:</p>
+      <ul>
+        <li><a href="/api/v1/swagger.json" class="external-link">OpenAPI Specification (JSON)</a></li>
+        <li>Swagger UI über localhost: <code>http://localhost:3000/api/v1/docs</code></li>
+        <li>Postman Collection: Importieren Sie die OpenAPI Spec in Postman</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    async function tryEndpoint(method, path, body) {
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (token && path !== '/api/v1/auth/login') {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      try {
+        const options = {
+          method,
+          headers
+        };
+        
+        if (body && method !== 'GET') {
+          options.body = JSON.stringify(body);
+        }
+        
+        const response = await fetch(path, options);
+        const data = await response.json();
+        
+        if (path === '/api/v1/auth/login' && data.data && data.data.accessToken) {
+          localStorage.setItem('token', data.data.accessToken);
+          alert('Login erfolgreich! Token gespeichert.');
+        }
+        
+        console.log('Response:', data);
+        alert('Antwort in der Browser-Konsole (F12)');
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Fehler: ' + error.message);
+      }
+    }
+  </script>
+</body>
+</html>
