@@ -1,5 +1,9 @@
 # Anlagen-Management-System (AMS)
 
+[![CI Pipeline](https://github.com/DJTobi24/anlagen-management-system/actions/workflows/ci.yml/badge.svg)](https://github.com/DJTobi24/anlagen-management-system/actions/workflows/ci.yml)
+[![Deploy Pipeline](https://github.com/DJTobi24/anlagen-management-system/actions/workflows/deploy.yml/badge.svg)](https://github.com/DJTobi24/anlagen-management-system/actions/workflows/deploy.yml)
+[![Performance Tests](https://github.com/DJTobi24/anlagen-management-system/actions/workflows/performance-test.yml/badge.svg)](https://github.com/DJTobi24/anlagen-management-system/actions/workflows/performance-test.yml)
+
 Ein professionelles Multi-Tenant-System zur Verwaltung technischer Anlagen mit QR-Code-basierter Erfassung und mobilem Zugriff.
 
 ## 🚀 Features

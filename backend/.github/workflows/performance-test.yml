@@ -1,0 +1,110 @@
+name: Performance Tests
+
+on:
+  schedule:
+    # Läuft täglich um 2:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      concurrent_users:
+        description: 'Anzahl gleichzeitiger Benutzer'
+        required: false
+        default: '50'
+      test_duration:
+        description: 'Test-Dauer in Sekunden'
+        required: false
+        default: '60'
+
+jobs:
+  performance-test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_anlagen_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Create .env file
+      run: |
+        cat > .env << EOF
+        NODE_ENV=test
+        PORT=3000
+        DATABASE_URL=postgresql://test_user:test_password@localhost:5432/test_anlagen_db
+        DB_HOST=localhost
+        DB_PORT=5432
+        DB_NAME=test_anlagen_db
+        DB_USER=test_user
+        DB_PASSWORD=test_password
+        JWT_SECRET=test-secret-key-for-performance-testing
+        JWT_EXPIRES_IN=1d
+        REDIS_URL=redis://localhost:6379
+        LOG_LEVEL=error
+        IMPORT_WORKERS=10
+        MAX_FILE_SIZE=52428800
+        EOF
+    
+    - name: Run database migrations
+      run: npm run migrate
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_anlagen_db
+    
+    - name: Build application
+      run: npm run build
+    
+    - name: Start server in background
+      run: |
+        npm start &
+        sleep 10
+        curl -f http://localhost:3000/api/health || exit 1
+      env:
+        NODE_ENV: test
+    
+    - name: Run performance tests
+      run: |
+        export CONCURRENT_USERS=${{ github.event.inputs.concurrent_users || '50' }}
+        export TEST_DURATION_SECONDS=${{ github.event.inputs.test_duration || '60' }}
+        node scripts/performance-test.js
+      env:
+        API_URL: http://localhost:3000/api
+    
+    - name: Upload performance results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: performance-test-results
+        path: |
+          performance-results.json
+          server.log
+        retention-days: 30
