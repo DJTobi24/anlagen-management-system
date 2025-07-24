@@ -18,6 +18,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - anlagen-network
 
   redis:
     image: redis:7-alpine
@@ -27,12 +29,14 @@ services:
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
+    networks:
+      - anlagen-network
 
-  api:
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: anlagen_api
+    container_name: anlagen_backend
     ports:
       - "3000:3000"
     environment:
@@ -41,6 +45,8 @@ services:
       REDIS_URL: redis://redis:6379
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
       JWT_REFRESH_SECRET: your-super-secret-refresh-key-change-in-production
+      API_PREFIX: /api
+      API_VERSION: v1
     depends_on:
       db:
         condition: service_healthy
@@ -49,8 +55,29 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
+      - ./uploads:/app/uploads
     command: npm run dev
+    networks:
+      - anlagen-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: anlagen_frontend
+    ports:
+      - "80:80"
+    environment:
+      REACT_APP_API_URL: /api/v1
+    depends_on:
+      - backend
+    networks:
+      - anlagen-network
 
 volumes:
   postgres_data:
   redis_data:
+
+networks:
+  anlagen-network:
+    driver: bridge
