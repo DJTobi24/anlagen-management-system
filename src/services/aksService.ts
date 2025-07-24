@@ -444,7 +444,7 @@ export class AksService {
     // Type validation
     switch (field.dataType) {
       case AksDataType.INTEGER:
-      case AksDataType.DECIMAL:
+      case AksDataType.DECIMAL: {
         const numValue = parseFloat(value);
         if (isNaN(numValue)) {
           errors.push('Must be a valid number');
@@ -457,8 +457,9 @@ export class AksService {
           }
         }
         break;
+      }
 
-      case AksDataType.STRING:
+      case AksDataType.STRING: {
         const strValue = String(value);
         if (field.minLength && strValue.length < field.minLength) {
           errors.push(`Must be at least ${field.minLength} characters`);
@@ -473,13 +474,15 @@ export class AksService {
           }
         }
         break;
+      }
 
-      case AksDataType.DATE:
+      case AksDataType.DATE: {
         const date = new Date(value);
         if (isNaN(date.getTime())) {
           errors.push('Must be a valid date');
         }
         break;
+      }
 
       case AksDataType.BOOLEAN:
         if (typeof value !== 'boolean' && !['true', 'false', '1', '0'].includes(String(value))) {

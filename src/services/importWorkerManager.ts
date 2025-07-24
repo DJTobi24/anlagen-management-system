@@ -60,7 +60,7 @@ export class ImportWorkerManager {
               }
               break;
 
-            case 'complete':
+            case 'complete': {
               const results = message.data as ProcessedRow[];
               allResults.push(...results);
               
@@ -78,6 +78,7 @@ export class ImportWorkerManager {
               
               worker.terminate();
               break;
+            }
 
             case 'error':
               reject(new Error(`Worker error: ${message.data.error}`));
