@@ -97,7 +97,7 @@ SELECT
     id, 'KAS1274', '12_Nenndurchfluss', 'Nenndurchfluss', 'number', 'decimal', 'm³/h', true, 0, 1000, 2
 FROM aks_codes WHERE code = 'AKS.03.470.07.03';
 
-INSERT INTO aks_fields (aks_code_id, kas_code, field_name, display_name, field_type, data_type, unit, is_required, field_order)
+INSERT INTO aks_fields (aks_code_id, kas_code, field_name, display_name, field_type, data_type, unit, is_required, min_value, max_value, field_order)
 SELECT 
     id, 'KAS1275', '13_Betriebsstunden', 'Betriebsstunden', 'number', 'integer', 'h', false, 0, NULL, 3
 FROM aks_codes WHERE code = 'AKS.03.470.07.03';
