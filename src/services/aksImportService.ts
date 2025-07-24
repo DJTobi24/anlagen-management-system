@@ -309,6 +309,17 @@ export class AksImportService {
     }
   }
 
+  private static parseNumericValue(value: string | number | undefined): number | undefined {
+    if (value === undefined || value === null || value === '') {
+      return undefined;
+    }
+    if (typeof value === 'number') {
+      return value;
+    }
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? undefined : parsed;
+  }
+
   private static async processAksField(
     aksCodeId: string,
     row: AksImportRow,
@@ -343,10 +354,10 @@ export class AksImportService {
       await AksService.updateAksField(existingField.rows[0].id, {
         displayName: row.displayName || row.fieldName,
         isRequired: row.isRequired as boolean,
-        minValue: row.minValue,
-        maxValue: row.maxValue,
-        minLength: row.minLength,
-        maxLength: row.maxLength,
+        minValue: this.parseNumericValue(row.minValue),
+        maxValue: this.parseNumericValue(row.maxValue),
+        minLength: this.parseNumericValue(row.minLength),
+        maxLength: this.parseNumericValue(row.maxLength),
         regex: row.regex,
         options,
         defaultValue: row.defaultValue,
@@ -363,10 +374,10 @@ export class AksImportService {
         dataType,
         unit: row.unit,
         isRequired: row.isRequired as boolean,
-        minValue: row.minValue,
-        maxValue: row.maxValue,
-        minLength: row.minLength,
-        maxLength: row.maxLength,
+        minValue: this.parseNumericValue(row.minValue),
+        maxValue: this.parseNumericValue(row.maxValue),
+        minLength: this.parseNumericValue(row.minLength),
+        maxLength: this.parseNumericValue(row.maxLength),
         regex: row.regex,
         options,
         defaultValue: row.defaultValue,

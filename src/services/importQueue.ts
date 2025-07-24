@@ -221,19 +221,19 @@ class ImportQueueService {
 
     if (updates.processedRows !== undefined) {
       fields.push(`processed_rows = $${paramCount++}`);
-      values.push(updates.processedRows);
+      values.push(updates.processedRows.toString());
     }
     if (updates.successfulRows !== undefined) {
       fields.push(`successful_rows = $${paramCount++}`);
-      values.push(updates.successfulRows);
+      values.push(updates.successfulRows.toString());
     }
     if (updates.failedRows !== undefined) {
       fields.push(`failed_rows = $${paramCount++}`);
-      values.push(updates.failedRows);
+      values.push(updates.failedRows.toString());
     }
     if (updates.progress !== undefined) {
       fields.push(`progress = $${paramCount++}`);
-      values.push(updates.progress);
+      values.push(updates.progress.toString());
     }
     if (updates.errors) {
       fields.push(`errors = $${paramCount++}`);

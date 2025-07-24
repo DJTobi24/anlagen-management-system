@@ -164,6 +164,7 @@ export async function createSampleExcelFile(): Promise<Buffer> {
         type: 'cellIs',
         operator: 'equal',
         formulae: ['"aktiv"'],
+        priority: 1,
         style: {
           fill: {
             type: 'pattern',
@@ -176,6 +177,7 @@ export async function createSampleExcelFile(): Promise<Buffer> {
         type: 'cellIs',
         operator: 'equal',
         formulae: ['"wartung"'],
+        priority: 2,
         style: {
           fill: {
             type: 'pattern',
@@ -188,6 +190,7 @@ export async function createSampleExcelFile(): Promise<Buffer> {
         type: 'cellIs',
         operator: 'equal',
         formulae: ['"defekt"'],
+        priority: 3,
         style: {
           fill: {
             type: 'pattern',

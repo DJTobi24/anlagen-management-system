@@ -188,7 +188,7 @@ export class AksService {
     }
     if (data.isActive !== undefined) {
       fields.push(`is_active = $${paramCount++}`);
-      values.push(data.isActive);
+      values.push(data.isActive.toString());
     }
 
     if (fields.length === 0) {
@@ -304,23 +304,23 @@ export class AksService {
     }
     if (fieldData.isRequired !== undefined) {
       fields.push(`is_required = $${paramCount++}`);
-      values.push(fieldData.isRequired);
+      values.push(fieldData.isRequired.toString());
     }
     if (fieldData.minValue !== undefined) {
       fields.push(`min_value = $${paramCount++}`);
-      values.push(fieldData.minValue);
+      values.push(fieldData.minValue.toString());
     }
     if (fieldData.maxValue !== undefined) {
       fields.push(`max_value = $${paramCount++}`);
-      values.push(fieldData.maxValue);
+      values.push(fieldData.maxValue.toString());
     }
     if (fieldData.minLength !== undefined) {
       fields.push(`min_length = $${paramCount++}`);
-      values.push(fieldData.minLength);
+      values.push(fieldData.minLength.toString());
     }
     if (fieldData.maxLength !== undefined) {
       fields.push(`max_length = $${paramCount++}`);
-      values.push(fieldData.maxLength);
+      values.push(fieldData.maxLength.toString());
     }
     if (fieldData.regex !== undefined) {
       fields.push(`regex = $${paramCount++}`);
@@ -340,7 +340,7 @@ export class AksService {
     }
     if (fieldData.order !== undefined) {
       fields.push(`field_order = $${paramCount++}`);
-      values.push(fieldData.order);
+      values.push(fieldData.order.toString());
     }
 
     if (fields.length === 0) {
