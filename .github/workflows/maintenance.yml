@@ -1,0 +1,236 @@
+name: Maintenance Tasks
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Maintenance task to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - backup
+          - cleanup
+          - update-aks
+          - optimize-db
+
+jobs:
+  # Database Backup
+  database-backup:
+    name: Database Backup
+    runs-on: ubuntu-latest
+    if: github.event.inputs.task == 'all' || github.event.inputs.task == 'backup' || github.event_name == 'schedule'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Create backup script
+        run: |
+          cat > backup.sh << 'EOF'
+          #!/bin/bash
+          set -e
+          
+          DATE=$(date +%Y%m%d_%H%M%S)
+          BACKUP_DIR="/backups"
+          BACKUP_FILE="anlagen_backup_${DATE}.sql"
+          
+          echo "Creating database backup: ${BACKUP_FILE}"
+          
+          # Create backup
+          docker exec anlagen_db pg_dump -U anlagen_user anlagen_management > "${BACKUP_DIR}/${BACKUP_FILE}"
+          
+          # Compress backup
+          gzip "${BACKUP_DIR}/${BACKUP_FILE}"
+          
+          # Upload to S3 or other storage
+          # aws s3 cp "${BACKUP_DIR}/${BACKUP_FILE}.gz" s3://backups/database/
+          
+          # Keep only last 30 days of local backups
+          find ${BACKUP_DIR} -name "anlagen_backup_*.sql.gz" -mtime +30 -delete
+          
+          echo "✅ Backup completed: ${BACKUP_FILE}.gz"
+          EOF
+          
+          chmod +x backup.sh
+          
+      - name: Run backup
+        run: |
+          echo "Running database backup..."
+          # ./backup.sh
+
+  # Cleanup Tasks
+  cleanup:
+    name: Cleanup Old Data
+    runs-on: ubuntu-latest
+    if: github.event.inputs.task == 'all' || github.event.inputs.task == 'cleanup' || github.event_name == 'schedule'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Clean up old data
+        run: |
+          cat > cleanup.sql << 'EOF'
+          -- Clean up old import jobs (older than 90 days)
+          DELETE FROM import_jobs 
+          WHERE created_at < NOW() - INTERVAL '90 days'
+          AND status IN ('completed', 'failed', 'cancelled');
+          
+          -- Clean up orphaned records
+          DELETE FROM anlagen 
+          WHERE objekt_id NOT IN (SELECT id FROM objekte WHERE is_active = true)
+          AND is_active = false;
+          
+          -- Clean up old audit logs (if exists)
+          DELETE FROM audit_logs 
+          WHERE created_at < NOW() - INTERVAL '180 days';
+          
+          -- Vacuum analyze for performance
+          VACUUM ANALYZE;
+          EOF
+          
+          echo "Running cleanup tasks..."
+          # docker exec anlagen_db psql -U anlagen_user -d anlagen_management -f cleanup.sql
+
+  # Update AKS Data
+  update-aks:
+    name: Update AKS Master Data
+    runs-on: ubuntu-latest
+    if: github.event.inputs.task == 'all' || github.event.inputs.task == 'update-aks'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Check for AKS updates
+        run: |
+          echo "Checking for AKS master data updates..."
+          # Add logic to check for and import AKS updates
+          
+      - name: Update maintenance intervals
+        run: |
+          cat > update_maintenance.sql << 'EOF'
+          -- Update maintenance intervals based on usage patterns
+          UPDATE aks_codes
+          SET wartung_intervall_monate = CASE
+            WHEN kategorie = 'critical' AND wartung_intervall_monate > 6 THEN 6
+            WHEN kategorie = 'standard' AND wartung_intervall_monate > 12 THEN 12
+            ELSE wartung_intervall_monate
+          END
+          WHERE is_active = true;
+          
+          -- Generate maintenance schedule for next quarter
+          INSERT INTO maintenance_schedule (anlage_id, scheduled_date, aks_code)
+          SELECT 
+            a.id,
+            a.letzte_wartung + INTERVAL '1 month' * ak.wartung_intervall_monate,
+            a.aks_code
+          FROM anlagen a
+          JOIN aks_codes ak ON a.aks_code = ak.code
+          WHERE a.is_active = true
+          AND a.letzte_wartung + INTERVAL '1 month' * ak.wartung_intervall_monate < NOW() + INTERVAL '3 months'
+          ON CONFLICT DO NOTHING;
+          EOF
+          
+          echo "Updating maintenance intervals..."
+          # docker exec anlagen_db psql -U anlagen_user -d anlagen_management -f update_maintenance.sql
+
+  # Database Optimization
+  optimize-database:
+    name: Optimize Database
+    runs-on: ubuntu-latest
+    if: github.event.inputs.task == 'all' || github.event.inputs.task == 'optimize-db' || (github.event_name == 'schedule' && github.event.schedule == '0 2 * * 0')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Run database optimization
+        run: |
+          cat > optimize.sql << 'EOF'
+          -- Update statistics
+          ANALYZE;
+          
+          -- Reindex tables
+          REINDEX TABLE anlagen;
+          REINDEX TABLE objekte;
+          REINDEX TABLE liegenschaften;
+          REINDEX TABLE aks_codes;
+          
+          -- Update query planner statistics
+          VACUUM ANALYZE;
+          
+          -- Check for missing indexes
+          SELECT 
+            schemaname,
+            tablename,
+            attname,
+            n_distinct,
+            most_common_vals
+          FROM pg_stats
+          WHERE schemaname = 'public'
+          AND n_distinct > 100
+          AND tablename IN ('anlagen', 'objekte', 'liegenschaften')
+          ORDER BY n_distinct DESC;
+          EOF
+          
+          echo "Running database optimization..."
+          # docker exec anlagen_db psql -U anlagen_user -d anlagen_management -f optimize.sql
+
+  # Health Report
+  health-report:
+    name: Generate Health Report
+    runs-on: ubuntu-latest
+    needs: [database-backup, cleanup, update-aks, optimize-database]
+    if: always()
+    
+    steps:
+      - name: Generate system health report
+        run: |
+          cat > health_check.sql << 'EOF'
+          -- System statistics
+          SELECT 
+            'Total Anlagen' as metric,
+            COUNT(*) as value
+          FROM anlagen WHERE is_active = true
+          UNION ALL
+          SELECT 
+            'Total Objekte',
+            COUNT(*)
+          FROM objekte WHERE is_active = true
+          UNION ALL
+          SELECT 
+            'Total Liegenschaften',
+            COUNT(*)
+          FROM liegenschaften WHERE is_active = true
+          UNION ALL
+          SELECT 
+            'Pending Imports',
+            COUNT(*)
+          FROM import_jobs WHERE status = 'pending'
+          UNION ALL
+          SELECT 
+            'Database Size (MB)',
+            pg_database_size('anlagen_management') / 1024 / 1024
+          FROM pg_database WHERE datname = 'anlagen_management';
+          EOF
+          
+          echo "Generating health report..."
+          # docker exec anlagen_db psql -U anlagen_user -d anlagen_management -f health_check.sql
+          
+      - name: Send report
+        run: |
+          echo "📊 Daily Maintenance Report"
+          echo "========================="
+          echo "Date: $(date)"
+          echo "Backup: ${{ needs.database-backup.result }}"
+          echo "Cleanup: ${{ needs.cleanup.result }}"
+          echo "AKS Update: ${{ needs.update-aks.result }}"
+          echo "DB Optimization: ${{ needs.optimize-database.result }}"
+          
+          # Send report via email/Slack/Teams

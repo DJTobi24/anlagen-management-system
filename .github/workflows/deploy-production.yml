@@ -1,0 +1,210 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      version:
+        description: 'Version tag to deploy (leave empty for latest)'
+        required: false
+        default: ''
+
+env:
+  DOCKER_REGISTRY: docker.io
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  PROJECT_NAME: anlagen-management-system
+
+jobs:
+  # Pre-deployment checks
+  pre-deploy:
+    name: Pre-deployment Checks
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_version: ${{ steps.version.outputs.version }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Determine version to deploy
+        id: version
+        run: |
+          if [ -z "${{ github.event.inputs.version }}" ]; then
+            echo "version=${{ github.sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Check if images exist
+        run: |
+          echo "Checking for images with tag: ${{ steps.version.outputs.version }}"
+          # Add actual image existence check here
+
+  # Database backup (for production only)
+  backup-database:
+    name: Backup Database
+    runs-on: ubuntu-latest
+    needs: pre-deploy
+    if: github.event.inputs.environment == 'production'
+    
+    steps:
+      - name: Create database backup
+        run: |
+          echo "Creating database backup before deployment..."
+          # Add actual backup commands here
+          # Example:
+          # ssh production-server "docker exec anlagen_db pg_dump -U anlagen_user anlagen_management > backup_$(date +%Y%m%d_%H%M%S).sql"
+
+  # Deploy to environment
+  deploy:
+    name: Deploy to ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    needs: [pre-deploy, backup-database]
+    if: always() && needs.pre-deploy.result == 'success'
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Create deployment package
+        run: |
+          mkdir -p deployment
+          cp docker-compose.yml deployment/
+          cp -r nginx.conf deployment/
+          
+          # Create environment-specific docker-compose override
+          cat > deployment/docker-compose.${{ github.event.inputs.environment }}.yml << EOF
+          version: '3.8'
+          services:
+            backend:
+              image: ${{ env.DOCKER_USERNAME }}/ams-backend:${{ needs.pre-deploy.outputs.deploy_version }}
+              restart: always
+              environment:
+                - NODE_ENV=${{ github.event.inputs.environment }}
+                
+            frontend:
+              image: ${{ env.DOCKER_USERNAME }}/ams-frontend:${{ needs.pre-deploy.outputs.deploy_version }}
+              restart: always
+              
+            db:
+              volumes:
+                - postgres_data_${{ github.event.inputs.environment }}:/var/lib/postgresql/data
+                
+          volumes:
+            postgres_data_${{ github.event.inputs.environment }}:
+          EOF
+          
+      - name: Create deployment script
+        run: |
+          cat > deployment/deploy.sh << 'EOF'
+          #!/bin/bash
+          set -e
+          
+          echo "🚀 Starting deployment to ${{ github.event.inputs.environment }}..."
+          
+          # Pull latest images
+          docker-compose -f docker-compose.yml -f docker-compose.${{ github.event.inputs.environment }}.yml pull
+          
+          # Run database migrations
+          echo "Running database migrations..."
+          docker-compose -f docker-compose.yml -f docker-compose.${{ github.event.inputs.environment }}.yml run --rm backend npm run migrate
+          
+          # Start services with zero-downtime deployment
+          echo "Starting services..."
+          docker-compose -f docker-compose.yml -f docker-compose.${{ github.event.inputs.environment }}.yml up -d --no-deps --scale backend=2 backend
+          sleep 30
+          docker-compose -f docker-compose.yml -f docker-compose.${{ github.event.inputs.environment }}.yml up -d --no-deps backend
+          docker-compose -f docker-compose.yml -f docker-compose.${{ github.event.inputs.environment }}.yml up -d frontend
+          
+          # Health check
+          echo "Performing health checks..."
+          timeout 60 bash -c 'until curl -f http://localhost:3000/api/v1/health; do sleep 2; done'
+          
+          # Cleanup old containers
+          docker system prune -f
+          
+          echo "✅ Deployment completed successfully!"
+          EOF
+          
+          chmod +x deployment/deploy.sh
+          
+      - name: Deploy to server
+        run: |
+          echo "Deploying to ${{ github.event.inputs.environment }} server..."
+          echo "Version: ${{ needs.pre-deploy.outputs.deploy_version }}"
+          
+          # Add actual deployment commands here
+          # Example:
+          # scp -r deployment/* user@server:/opt/anlagen-management/
+          # ssh user@server "cd /opt/anlagen-management && ./deploy.sh"
+
+  # Post-deployment checks
+  post-deploy:
+    name: Post-deployment Verification
+    runs-on: ubuntu-latest
+    needs: deploy
+    
+    steps:
+      - name: Check application health
+        run: |
+          echo "Checking application health on ${{ github.event.inputs.environment }}..."
+          # Add actual health check commands
+          # curl https://${{ github.event.inputs.environment }}.anlagen-management.com/api/v1/health
+          
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests..."
+          # Add smoke test commands
+          
+      - name: Check logs for errors
+        run: |
+          echo "Checking application logs..."
+          # ssh server "docker logs anlagen_backend --tail 100 | grep ERROR" || true
+
+  # Rollback on failure
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy, post-deploy]
+    if: failure() && github.event.inputs.environment == 'production'
+    
+    steps:
+      - name: Rollback to previous version
+        run: |
+          echo "⚠️ Deployment failed! Rolling back..."
+          # Add rollback commands
+          
+      - name: Restore database backup
+        run: |
+          echo "Restoring database backup..."
+          # Add restore commands
+
+  # Notification
+  notify:
+    name: Send Notification
+    runs-on: ubuntu-latest
+    needs: [deploy, post-deploy]
+    if: always()
+    
+    steps:
+      - name: Notify team
+        run: |
+          if [[ "${{ needs.post-deploy.result }}" == "success" ]]; then
+            echo "✅ Deployment to ${{ github.event.inputs.environment }} successful!"
+            echo "Version: ${{ needs.pre-deploy.outputs.deploy_version }}"
+          else
+            echo "❌ Deployment to ${{ github.event.inputs.environment }} failed!"
+          fi
+          
+          # Add actual notification (Slack, Teams, Email, etc.)
+          # Example:
+          # curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
+          #   -d '{"text":"Deployment status: ${{ needs.post-deploy.result }}"}'
