@@ -47,13 +47,13 @@ INSERT INTO aks_codes (code, name, category, is_active) VALUES
 ('523', 'Zugangskontrolle', 'Sicherheit', true);
 
 -- Mandanten einfügen
-INSERT INTO mandanten (name, code, beschreibung, aktiv) VALUES
+INSERT INTO mandanten (name, code, description, is_active) VALUES
 ('Stadtwerke München', 'SWM', 'Kommunaler Energieversorger und Infrastrukturdienstleister', true),
 ('Immobilien Berlin GmbH', 'IBG', 'Verwaltung städtischer Immobilien in Berlin', true),
 ('Klinikum Frankfurt', 'KLF', 'Universitätsklinikum mit mehreren Standorten', true);
 
 -- Benutzer einfügen (Passwort: Admin123! für Admins, User123! für andere)
-INSERT INTO users (email, passwort, name, rolle, mandant_id, aktiv) VALUES
+INSERT INTO users (email, password, name, role, mandant_id, is_active) VALUES
 -- Stadtwerke München
 ('admin@swm.de', '$2a$10$YourHashedPasswordHere', 'Admin Stadtwerke München', 'admin', 1, true),
 ('technik@swm.de', '$2a$10$YourHashedPasswordHere', 'Max Müller', 'techniker', 1, true),
@@ -74,7 +74,7 @@ INSERT INTO users (email, passwort, name, rolle, mandant_id, aktiv) VALUES
 
 -- Beispiel-Anlagen für jeden Mandanten
 -- Stadtwerke München
-INSERT INTO anlagen (anlagen_nummer, bezeichnung, liegenschaft, objekt, aks_code, hersteller, modell, seriennummer, baujahr, letzte_wartung, naechste_wartung, status, mandant_id, wartungsintervall_monate, anschaffungswert, standort, verantwortlicher, bemerkungen) VALUES
+INSERT INTO anlagen (anlagen_nummer, name, liegenschaft, objekt, aks_code, hersteller, modell, seriennummer, baujahr, letzte_wartung, naechste_wartung, status, mandant_id, wartungsintervall_monate, anschaffungswert, standort, verantwortlicher, bemerkungen) VALUES
 ('SWM-00001', 'Mittelspannungsanlage Hauptverteilung', 'Kraftwerk Nord', 'Gebäude A', '112', 'Siemens', 'NXPLUS C', 'SN2024001', 2020, '2024-06-15', '2024-12-15', 'aktiv', 1, 6, 250000, 'UG.1.15', 'Max Müller', 'Hauptverteilung 20kV'),
 ('SWM-00002', 'Gasheizung Verwaltung', 'Hauptverwaltung', 'Hauptgebäude', '211', 'Viessmann', 'Vitoplex 300', 'VIT2021234', 2021, '2024-09-01', '2025-03-01', 'aktiv', 1, 6, 85000, 'KG.2.03', 'Anna Schmidt', 'Leistung: 500kW'),
 ('SWM-00003', 'Serveranlage Rechenzentrum', 'Hauptverwaltung', 'IT-Zentrum', '133', 'Dell', 'PowerEdge R750', 'DELL2023567', 2023, '2024-11-01', '2025-02-01', 'aktiv', 1, 3, 120000, '3.OG.2.12', 'Tom Wagner', 'Redundanter Server'),
