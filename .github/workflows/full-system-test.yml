@@ -42,7 +42,7 @@ jobs:
     
     - name: Build and start services
       run: |
-        docker-compose up -d --build
+        docker compose up -d --build
     
     - name: Wait for services to be ready
       run: |
@@ -57,7 +57,7 @@ jobs:
     
     - name: Run database migrations
       run: |
-        docker-compose exec -T backend npm run migrate
+        docker compose exec -T backend npm run migrate
     
     - name: Test backend API endpoints
       run: |
@@ -95,18 +95,18 @@ jobs:
       if: always()
       run: |
         echo "=== Backend Logs ==="
-        docker-compose logs backend | tail -50
+        docker compose logs backend | tail -50
         
         echo "=== Frontend Logs ==="
-        docker-compose logs frontend | tail -50
+        docker compose logs frontend | tail -50
         
         echo "=== Database Logs ==="
-        docker-compose logs db | tail -20
+        docker compose logs db | tail -20
     
     - name: Stop services
       if: always()
       run: |
-        docker-compose down -v
+        docker compose down -v
     
     - name: Report test results
       run: |
