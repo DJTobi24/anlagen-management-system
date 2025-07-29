@@ -118,16 +118,48 @@ export const aksService = {
     return response.data;
   },
 
+  // Get AKS tree (hierarchical structure based on code pattern)
+  getAksTree: async (parentCode?: string): Promise<AksCode[]> => {
+    let url = '/aks/tree';
+    if (parentCode) {
+      // Get children of a specific code
+      url += `?parentCode=${encodeURIComponent(parentCode)}`;
+    } else {
+      // Get only top-level codes (AKS.XX)
+      url += '?level=1';
+    }
+    const response = await api.get<ApiResponse<AksCode[]>>(url);
+    return response.data.data;
+  },
+
   // Validate AKS fields
   validateFields: async (data: { aksCode: string, fieldValues: any[] }): Promise<any> => {
     const response = await api.post<ApiResponse<any>>('/aks/validate', data);
     return response.data;
   },
 
-  // Get AKS tree structure
-  getAksTree: async (parentCode?: string): Promise<any[]> => {
-    const params = parentCode ? { parentCode } : {};
-    const response = await api.get<ApiResponse<any[]>>('/aks/tree', { params });
-    return response.data.data;
+  // Import AKS codes from Excel
+  importAksFromExcel: async (file: File): Promise<{ data: { success: number; failed: number; errors: any[] } }> => {
+    const formData = new FormData();
+    formData.append('excel', file);
+    
+    const response = await api.post<ApiResponse<{ success: number; failed: number; errors: any[] }>>(
+      '/aks/codes/import', 
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  },
+
+  // Download AKS import template
+  downloadAksImportTemplate: async (): Promise<Blob> => {
+    const response = await api.get('/aks/codes/import/template', {
+      responseType: 'blob',
+    });
+    return response.data;
   }
 };

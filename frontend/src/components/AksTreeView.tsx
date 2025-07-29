@@ -3,9 +3,6 @@ import { useQuery } from 'react-query';
 import { 
   ChevronRightIcon, 
   ChevronDownIcon,
-  CogIcon,
-  DocumentTextIcon,
-  BuildingOfficeIcon,
   FolderIcon,
   FolderOpenIcon,
   WrenchScrewdriverIcon,
@@ -28,12 +25,20 @@ interface AksTreeViewProps {
 const AksTreeView: React.FC<AksTreeViewProps> = ({ onSelectNode, selectedNodeId }) => {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   
-  // Fetch root level nodes
+  // Fetch root level nodes (AKS.XX codes)
   const { data: rootNodes, isLoading, error } = useQuery(
     ['aks-tree-root'],
     () => aksService.getAksTree(),
     {
       staleTime: 5 * 60 * 1000, // 5 minutes
+      select: (data) => {
+        // All nodes can potentially have children based on code structure
+        return data.map(node => ({
+          ...node,
+          hasChildren: true, // Assume all codes can have children
+          level: (node.code.match(/\./g) || []).length // Determine level by counting dots
+        }));
+      }
     }
   );
 
@@ -48,20 +53,21 @@ const AksTreeView: React.FC<AksTreeViewProps> = ({ onSelectNode, selectedNodeId 
   };
 
   const getNodeIcon = (node: TreeNode, isExpanded: boolean) => {
-    if (node.isCategory) {
-      switch (node.level) {
-        case 1:
-          return <BuildingOfficeIcon className="h-5 w-5 text-blue-600" />;
-        case 2:
-          return isExpanded ? 
-            <FolderOpenIcon className="h-5 w-5 text-amber-500" /> :
-            <FolderIcon className="h-5 w-5 text-amber-600" />;
-        case 3:
-          return <DocumentTextIcon className="h-4 w-4 text-green-600" />;
-        default:
-          return <DocumentTextIcon className="h-4 w-4 text-gray-600" />;
-      }
+    // Determine icon based on code level
+    const dotCount = (node.code.match(/\./g) || []).length;
+    
+    if (dotCount === 1) {
+      // Top level (AKS.XX) - main categories
+      return isExpanded ? 
+        <FolderOpenIcon className="h-5 w-5 text-blue-500" /> :
+        <FolderIcon className="h-5 w-5 text-blue-600" />;
+    } else if (dotCount === 2) {
+      // Second level (AKS.XX.XXX) - subcategories
+      return isExpanded ? 
+        <FolderOpenIcon className="h-5 w-5 text-amber-500" /> :
+        <FolderIcon className="h-5 w-5 text-amber-600" />;
     } else {
+      // Third level and deeper - equipment/items
       return <WrenchScrewdriverIcon className="h-4 w-4 text-indigo-600" />;
     }
   };
@@ -74,7 +80,7 @@ const AksTreeView: React.FC<AksTreeViewProps> = ({ onSelectNode, selectedNodeId 
     let borderClasses = "";
     
     if (isSelected) {
-      bgClasses = "bg-gradient-to-r from-primary-100 to-primary-50 border-l-4 border-primary-500";
+      bgClasses = "bg-gradient-to-r from-indigo-100 to-indigo-50 border-l-4 border-indigo-500";
     } else {
       bgClasses = "hover:bg-gray-50 hover:shadow-sm";
     }
@@ -167,26 +173,16 @@ const AksTreeView: React.FC<AksTreeViewProps> = ({ onSelectNode, selectedNodeId 
                 
                 {/* Node Code and Level Badge */}
                 <div className="flex items-center mt-1 space-x-2">
-                  <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                  <span className="text-xs font-mono text-gray-500 bg-white border border-gray-200 px-2 py-0.5 rounded">
                     {node.code}
                   </span>
                   
                   {node.level && (
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      node.level === 1 ? 'bg-blue-100 text-blue-700' :
-                      node.level === 2 ? 'bg-amber-100 text-amber-700' :
-                      node.level === 3 ? 'bg-green-100 text-green-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      L{node.level}
+                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600">
+                      Ebene {node.level}
                     </span>
                   )}
                   
-                  {node.isCategory && (
-                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
-                      Kategorie
-                    </span>
-                  )}
                 </div>
               </div>
               
@@ -202,16 +198,16 @@ const AksTreeView: React.FC<AksTreeViewProps> = ({ onSelectNode, selectedNodeId 
                   </div>
                 )}
                 
-                {/* Children Count */}
-                {node.hasChildren && (
-                  <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full font-medium">
+                {/* Children indicator - show only for folders */}
+                {node.hasChildren && node.level && node.level < 4 && (
+                  <span className="text-xs bg-white border border-gray-200 text-gray-600 px-2 py-1 rounded-full font-medium">
                     {isExpanded ? '−' : '+'}
                   </span>
                 )}
 
                 {/* Actions Menu */}
                 <button 
-                  className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all duration-150"
+                  className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-gray-100 rounded-md transition-all duration-150"
                   onClick={(e) => {
                     e.stopPropagation();
                     // TODO: Show context menu
@@ -245,7 +241,7 @@ const AksTreeView: React.FC<AksTreeViewProps> = ({ onSelectNode, selectedNodeId 
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mx-auto mb-4"></div>
           <p className="text-sm text-gray-600">Lade AKS-Hierarchie...</p>
         </div>
       </div>
@@ -280,8 +276,8 @@ const AksTreeView: React.FC<AksTreeViewProps> = ({ onSelectNode, selectedNodeId 
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-white">
-      <div className="p-2">
+    <div className="h-full overflow-y-auto bg-gray-50 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+      <div className="p-4 space-y-1">
         {rootNodes.map(node => renderNode(node as TreeNode))}
       </div>
     </div>
@@ -302,6 +298,14 @@ const NodeChildren: React.FC<{
     () => aksService.getAksTree(nodeCode),
     {
       staleTime: 5 * 60 * 1000,
+      select: (data) => {
+        // Determine if nodes can have children based on code structure
+        return data.map(node => ({
+          ...node,
+          hasChildren: true, // Most codes can have children except the deepest level
+          level: (node.code.match(/\./g) || []).length
+        }));
+      }
     }
   );
 
@@ -316,20 +320,21 @@ const NodeChildren: React.FC<{
   };
 
   const getNodeIcon = (node: TreeNode, isExpanded: boolean) => {
-    if (node.isCategory) {
-      switch (node.level) {
-        case 1:
-          return <BuildingOfficeIcon className="h-5 w-5 text-blue-600" />;
-        case 2:
-          return isExpanded ? 
-            <FolderOpenIcon className="h-5 w-5 text-amber-500" /> :
-            <FolderIcon className="h-5 w-5 text-amber-600" />;
-        case 3:
-          return <DocumentTextIcon className="h-4 w-4 text-green-600" />;
-        default:
-          return <DocumentTextIcon className="h-4 w-4 text-gray-600" />;
-      }
+    // Determine icon based on code level
+    const dotCount = (node.code.match(/\./g) || []).length;
+    
+    if (dotCount === 1) {
+      // Top level (AKS.XX) - main categories
+      return isExpanded ? 
+        <FolderOpenIcon className="h-5 w-5 text-blue-500" /> :
+        <FolderIcon className="h-5 w-5 text-blue-600" />;
+    } else if (dotCount === 2) {
+      // Second level (AKS.XX.XXX) - subcategories
+      return isExpanded ? 
+        <FolderOpenIcon className="h-5 w-5 text-amber-500" /> :
+        <FolderIcon className="h-5 w-5 text-amber-600" />;
     } else {
+      // Third level and deeper - equipment/items
       return <WrenchScrewdriverIcon className="h-4 w-4 text-indigo-600" />;
     }
   };
@@ -342,7 +347,7 @@ const NodeChildren: React.FC<{
     let borderClasses = "";
     
     if (isSelected) {
-      bgClasses = "bg-gradient-to-r from-primary-100 to-primary-50 border-l-4 border-primary-500";
+      bgClasses = "bg-gradient-to-r from-indigo-100 to-indigo-50 border-l-4 border-indigo-500";
     } else {
       bgClasses = "hover:bg-gray-50 hover:shadow-sm";
     }
@@ -434,26 +439,16 @@ const NodeChildren: React.FC<{
                 
                 {/* Node Code and Level Badge */}
                 <div className="flex items-center mt-1 space-x-2">
-                  <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                  <span className="text-xs font-mono text-gray-500 bg-white border border-gray-200 px-2 py-0.5 rounded">
                     {node.code}
                   </span>
                   
                   {node.level && (
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      node.level === 1 ? 'bg-blue-100 text-blue-700' :
-                      node.level === 2 ? 'bg-amber-100 text-amber-700' :
-                      node.level === 3 ? 'bg-green-100 text-green-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      L{node.level}
+                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600">
+                      Ebene {node.level}
                     </span>
                   )}
                   
-                  {node.isCategory && (
-                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
-                      Kategorie
-                    </span>
-                  )}
                 </div>
               </div>
               
@@ -469,16 +464,16 @@ const NodeChildren: React.FC<{
                   </div>
                 )}
                 
-                {/* Children Count */}
-                {node.hasChildren && (
-                  <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full font-medium">
+                {/* Children indicator - show only for folders */}
+                {node.hasChildren && node.level && node.level < 4 && (
+                  <span className="text-xs bg-white border border-gray-200 text-gray-600 px-2 py-1 rounded-full font-medium">
                     {isExpanded ? '−' : '+'}
                   </span>
                 )}
 
                 {/* Actions Menu */}
                 <button 
-                  className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all duration-150"
+                  className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-gray-100 rounded-md transition-all duration-150"
                   onClick={(e) => {
                     e.stopPropagation();
                     // TODO: Show context menu

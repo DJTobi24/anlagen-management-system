@@ -93,8 +93,8 @@ export const createObjekt = async (req: AuthRequest, res: Response): Promise<voi
     }
     
     const query = `
-      INSERT INTO objekte (liegenschaft_id, name, description, floor, room, mandant_id)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO objekte (liegenschaft_id, name, description, floor, room)
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING *
     `;
     
@@ -103,8 +103,7 @@ export const createObjekt = async (req: AuthRequest, res: Response): Promise<voi
       name, 
       description, 
       floor, 
-      room,
-      mandant_id
+      room
     ]);
     
     res.status(201).json(result.rows[0]);
@@ -236,11 +235,10 @@ export const getOrCreateObjekt = async (
     const checkQuery = `
       SELECT id FROM objekte 
       WHERE LOWER(name) = LOWER($1) 
-        AND liegenschaft_id = $2 
-        AND mandant_id = $3
+        AND liegenschaft_id = $2
     `;
     
-    const checkResult = await pool.query(checkQuery, [name, liegenschaft_id, mandant_id]);
+    const checkResult = await pool.query(checkQuery, [name, liegenschaft_id]);
     
     if (checkResult.rows.length > 0) {
       return checkResult.rows[0].id;
@@ -248,8 +246,8 @@ export const getOrCreateObjekt = async (
     
     // Create new
     const createQuery = `
-      INSERT INTO objekte (liegenschaft_id, name, floor, room, mandant_id)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO objekte (liegenschaft_id, name, floor, room)
+      VALUES ($1, $2, $3, $4)
       RETURNING id
     `;
     
@@ -257,8 +255,7 @@ export const getOrCreateObjekt = async (
       liegenschaft_id, 
       name, 
       floor,
-      room,
-      mandant_id
+      room
     ]);
     
     return createResult.rows[0].id;

@@ -7,26 +7,47 @@ import toast from 'react-hot-toast';
 const Import: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [importType, setImportType] = useState<'standard' | 'extended'>('standard');
   const queryClient = useQueryClient();
 
-  const { data: importJobs } = useQuery(
+  const { data: importJobsData } = useQuery(
     'import-jobs',
     importService.getImportJobs,
     {
       refetchInterval: 5000, // Refresh every 5 seconds for active jobs
     }
   );
+  
+  // Ensure importJobs is always an array
+  const importJobs = Array.isArray(importJobsData) ? importJobsData : [];
 
-  const uploadMutation = useMutation(importService.uploadFile, {
-    onSuccess: (data) => {
-      toast.success('Import gestartet!');
-      setSelectedFile(null);
-      queryClient.invalidateQueries('import-jobs');
+  const uploadMutation = useMutation<any, any, File>(
+    async (file: File) => {
+      if (importType === 'extended') {
+        return await importService.uploadExtendedFile(file);
+      } else {
+        return await importService.uploadFile(file);
+      }
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Upload fehlgeschlagen');
-    },
-  });
+    {
+      onSuccess: (data) => {
+        if (importType === 'extended' && 'createdLiegenschaften' in data) {
+          const { success, failed, createdLiegenschaften, createdGebaeude } = data;
+          toast.success(
+            `Import abgeschlossen: ${success} Anlagen importiert, ${failed} fehlgeschlagen. ` +
+            `${createdLiegenschaften} Liegenschaften und ${createdGebaeude} Gebäude erstellt.`
+          );
+        } else {
+          toast.success('Import gestartet!');
+        }
+        setSelectedFile(null);
+        queryClient.invalidateQueries('import-jobs');
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.message || 'Upload fehlgeschlagen');
+      },
+    }
+  );
 
   const downloadTemplateMutation = useMutation(importService.downloadTemplate, {
     onSuccess: (data) => {
@@ -126,7 +147,7 @@ const Import: React.FC = () => {
           <button
             onClick={() => downloadTemplateMutation.mutate()}
             disabled={downloadTemplateMutation.isLoading}
-            className="btn-secondary inline-flex items-center mr-4"
+            className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 mr-4"
           >
             <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
             Template herunterladen
@@ -134,8 +155,62 @@ const Import: React.FC = () => {
         </div>
       </div>
 
+      {/* Import Type Selection */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">
+          Import-Typ auswählen
+        </h3>
+        <div className="grid grid-cols-2 gap-4">
+          <label className={`relative flex cursor-pointer rounded-lg border p-4 shadow-sm focus:outline-none ${
+            importType === 'standard' ? 'border-indigo-600 ring-2 ring-indigo-600' : 'border-gray-300'
+          }`}>
+            <input
+              type="radio"
+              name="import-type"
+              value="standard"
+              checked={importType === 'standard'}
+              onChange={(e) => setImportType(e.target.value as 'standard' | 'extended')}
+              className="sr-only"
+            />
+            <div className="flex flex-1">
+              <div className="flex flex-col">
+                <span className="block text-sm font-medium text-gray-900">
+                  Standard-Import
+                </span>
+                <span className="mt-1 flex items-center text-sm text-gray-500">
+                  Importiert Anlagen mit Basis-Informationen
+                </span>
+              </div>
+            </div>
+          </label>
+          
+          <label className={`relative flex cursor-pointer rounded-lg border p-4 shadow-sm focus:outline-none ${
+            importType === 'extended' ? 'border-indigo-600 ring-2 ring-indigo-600' : 'border-gray-300'
+          }`}>
+            <input
+              type="radio"
+              name="import-type"
+              value="extended"
+              checked={importType === 'extended'}
+              onChange={(e) => setImportType(e.target.value as 'standard' | 'extended')}
+              className="sr-only"
+            />
+            <div className="flex flex-1">
+              <div className="flex flex-col">
+                <span className="block text-sm font-medium text-gray-900">
+                  Erweiterter Import
+                </span>
+                <span className="mt-1 flex items-center text-sm text-gray-500">
+                  Mit Metadaten und automatischer Erstellung von Liegenschaften/Gebäuden
+                </span>
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
       {/* Upload Area */}
-      <div className="card">
+      <div className="bg-white rounded-lg shadow p-6">
         <div className="space-y-4">
           <h3 className="text-lg font-medium text-gray-900">
             Datei hochladen
@@ -144,8 +219,8 @@ const Import: React.FC = () => {
           <div
             className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md transition-colors ${
               dragActive
-                ? 'border-primary-500 bg-primary-50'
-                : 'border-gray-300 hover:border-gray-400'
+                ? 'border-indigo-500 bg-indigo-50'
+                : 'border-gray-300 hover:border-gray-400 bg-gray-50'
             }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -157,7 +232,7 @@ const Import: React.FC = () => {
               <div className="flex text-sm text-gray-600">
                 <label
                   htmlFor="file-upload"
-                  className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
+                  className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
                 >
                   <span>Excel-Datei auswählen</span>
                   <input
@@ -191,17 +266,35 @@ const Import: React.FC = () => {
                 <div className="flex space-x-2">
                   <button
                     onClick={() => setSelectedFile(null)}
-                    className="btn-secondary text-sm"
+                    className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                   >
                     Entfernen
                   </button>
                   <button
                     onClick={handleUpload}
                     disabled={uploadMutation.isLoading}
-                    className="btn-primary text-sm"
+                    className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                   >
                     {uploadMutation.isLoading ? 'Hochladen...' : 'Hochladen'}
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Import Type Info */}
+          {importType === 'extended' && (
+            <div className="mt-4 bg-blue-50 border-l-4 border-blue-400 p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <p className="text-sm text-blue-700">
+                    <strong>Erweiterter Import:</strong> Die Excel-Datei sollte folgende Spalten enthalten:
+                  </p>
+                  <ul className="mt-2 text-sm text-blue-700 list-disc list-inside">
+                    <li>Spalte A-U mit allen Metadaten (Vertrag, T-Nummer, FM-Nummer, etc.)</li>
+                    <li>Liegenschaft und Gebäude werden automatisch erstellt, falls nicht vorhanden</li>
+                    <li>Alle Daten werden als Metadaten gespeichert</li>
+                  </ul>
                 </div>
               </div>
             </div>
@@ -210,7 +303,7 @@ const Import: React.FC = () => {
       </div>
 
       {/* Import Jobs */}
-      <div className="card">
+      <div className="bg-white rounded-lg shadow p-6">
         <div className="mb-4">
           <h3 className="text-lg font-medium text-gray-900">
             Import-Verlauf
@@ -266,7 +359,7 @@ const Import: React.FC = () => {
                       <div className="flex items-center">
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div
-                            className="bg-primary-600 h-2 rounded-full"
+                            className="bg-indigo-600 h-2 rounded-full"
                             style={{
                               width: `${job.total_rows > 0 ? (job.processed_rows / job.total_rows) * 100 : 0}%`,
                             }}

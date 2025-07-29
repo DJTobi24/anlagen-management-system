@@ -8,6 +8,9 @@ const router = Router();
 // All routes require authentication
 router.use(authenticate);
 
+// Get all AKS codes (basic endpoint)
+router.get('/', AksController.searchAksCodes);
+
 // Public endpoints (all authenticated users)
 router.get('/categories', AksController.getAksCategories);
 router.get('/field-types', AksController.getFieldTypes);
@@ -85,7 +88,7 @@ router.delete(
   AksController.deleteAksField
 );
 
-// Import AKS from Excel (admin only)
+// Import AKS from Excel (admin only) - for field mappings
 router.post(
   '/import',
   authorize(UserRole.ADMIN),
@@ -93,11 +96,26 @@ router.post(
   AksController.importAksFromExcel
 );
 
-// Download import template
+// Download import template for field mappings
 router.get(
   '/import/template',
   authorize(UserRole.ADMIN),
   AksController.downloadImportTemplate
+);
+
+// Import AKS codes from Excel (admin only)
+router.post(
+  '/codes/import',
+  authorize(UserRole.ADMIN),
+  AksController.uploadMiddleware,
+  AksController.importAksFromExcel
+);
+
+// Download AKS codes import template
+router.get(
+  '/codes/import/template',
+  authorize(UserRole.ADMIN),
+  AksController.downloadAksImportTemplate
 );
 
 // Download error report

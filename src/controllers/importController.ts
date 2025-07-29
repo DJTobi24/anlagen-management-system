@@ -2,6 +2,8 @@ import { Response, NextFunction } from 'express';
 import multer from 'multer';
 import Joi from 'joi';
 import { ImportService } from '@/services/importService';
+import { ExtendedImportService } from '@/services/extendedImportService';
+import { ImportHistoryService } from '@/services/importHistoryService';
 import { AuthRequest } from '@/types';
 import { ExcelColumnMapping } from '@/types/import';
 import { createError } from '@/middleware/errorHandler';
@@ -114,7 +116,8 @@ export class ImportController {
       const { page, limit } = value;
       const offset = (page - 1) * limit;
 
-      const result = await ImportService.getJobsByMandant(req.mandantId, limit, offset);
+      // Use ImportHistoryService instead of ImportService
+      const result = await ImportHistoryService.getImportJobs(req.mandantId, limit, offset);
 
       res.json({
         message: 'Import jobs retrieved successfully',
@@ -141,7 +144,7 @@ export class ImportController {
       }
 
       const { id } = req.params;
-      const job = await ImportService.getJob(id, req.mandantId);
+      const job = await ImportHistoryService.getImportJob(id, req.mandantId);
 
       res.json({
         message: 'Import job retrieved successfully',
@@ -160,7 +163,7 @@ export class ImportController {
       }
 
       const { id } = req.params;
-      const reportBuffer = await ImportService.generateErrorReport(id, req.mandantId);
+      const reportBuffer = await ImportHistoryService.generateErrorReportExcel(id, req.mandantId);
 
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', `attachment; filename="import-errors-${id}.xlsx"`);
@@ -251,6 +254,34 @@ export class ImportController {
       res.json({
         message: 'Default column mapping retrieved successfully',
         data: defaultMapping
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Extended import with metadata and auto-creation
+  static async uploadExtendedExcel(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user || !req.mandantId) {
+        throw createError('Authentication required', 401);
+      }
+
+      if (!req.file) {
+        throw createError('No file uploaded', 400);
+      }
+
+      const result = await ExtendedImportService.importAnlagenFromExcel(
+        req.file.buffer,
+        req.mandantId,
+        req.user.id,
+        req.file.originalname
+      );
+
+      res.json({
+        message: 'Extended import completed successfully',
+        data: result
       });
 
     } catch (error) {

@@ -3,6 +3,7 @@ import multer from 'multer';
 import Joi from 'joi';
 import { AksService } from '@/services/aksService';
 import { AksImportService } from '@/services/aksImportService';
+import { AksExcelImportService } from '@/services/aksExcelImportService';
 import { AuthRequest } from '@/types';
 import { AksFieldType, AksDataType } from '@/types/aks';
 import { createError } from '@/middleware/errorHandler';
@@ -524,6 +525,19 @@ export class AksController {
         message: 'AKS tree retrieved successfully',
         data: tree
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Download AKS import template
+  static async downloadAksImportTemplate(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const buffer = await AksExcelImportService.generateTemplate();
+      
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="aks_import_template.xlsx"');
+      res.send(buffer);
     } catch (error) {
       next(error);
     }

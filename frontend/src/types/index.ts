@@ -36,6 +36,21 @@ export interface Anlage {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  pruefpflichtig?: boolean;
+  metadaten?: {
+    vertrag?: string;
+    suchbegriff?: string;
+    suchbegriff1?: string;
+    kd_wirtschaftseinheit?: string;
+    anzahl?: number;
+    einheit?: string;
+    vertragspositionen_beschreibung?: string;
+    kunde_ansprechpartner?: string;
+    attributsatz?: string;
+    code?: string;
+    aks_coba_id?: string;
+    aks_dl_alt?: string;
+  };
 }
 
 export interface AksCode {

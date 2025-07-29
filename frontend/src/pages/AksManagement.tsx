@@ -14,12 +14,14 @@ import { AksCode, AksImportResult } from '../types/aks';
 import AksTreeView from '../components/AksTreeView';
 import AksEditModal from '../components/AksEditModal';
 import BulkUpdateModal from '../components/BulkUpdateModal';
+import AksImportModal from '../components/AksImportModal';
 
 const AksManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showAksImportModal, setShowAksImportModal] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importResult, setImportResult] = useState<AksImportResult | null>(null);
   const [page, setPage] = useState(1);
@@ -39,6 +41,7 @@ const AksManagement: React.FC = () => {
     ['aks-codes', { searchTerm, selectedCategory, page, limit }],
     () => aksService.searchAksCodes({
       code: searchTerm,
+      name: searchTerm,
       category: selectedCategory,
       page,
       limit
@@ -290,7 +293,7 @@ const AksManagement: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -322,7 +325,7 @@ const AksManagement: React.FC = () => {
               onClick={() => setViewMode('tree')}
               className={`px-3 py-2 text-sm font-medium rounded-l-md ${
                 viewMode === 'tree'
-                  ? 'bg-primary-600 text-white'
+                  ? 'bg-indigo-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
@@ -333,7 +336,7 @@ const AksManagement: React.FC = () => {
               onClick={() => setViewMode('table')}
               className={`px-3 py-2 text-sm font-medium rounded-r-md border-l ${
                 viewMode === 'table'
-                  ? 'bg-primary-600 text-white'
+                  ? 'bg-indigo-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
@@ -344,21 +347,28 @@ const AksManagement: React.FC = () => {
 
           <button
             onClick={downloadTemplate}
-            className="btn-secondary inline-flex items-center"
+            className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
           >
             <DocumentArrowDownIcon className="h-5 w-5 mr-2" />
             Template
           </button>
           <button
             onClick={() => setShowImportModal(true)}
-            className="btn-secondary inline-flex items-centers"
+            className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
           >
             <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
-            Import
+            Felder Import
+          </button>
+          <button
+            onClick={() => setShowAksImportModal(true)}
+            className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          >
+            <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
+            AKS Import
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="btn-primary inline-flex items-center"
+            className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
           >
             <PlusIcon className="h-5 w-5 mr-2" />
             Erstellen
@@ -367,7 +377,7 @@ const AksManagement: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="card">
+      <div className="bg-white rounded-lg shadow p-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <label htmlFor="search" className="block text-sm font-medium text-gray-700">
@@ -380,7 +390,7 @@ const AksManagement: React.FC = () => {
               <input
                 id="search"
                 type="text"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 placeholder="AKS-Code oder Name suchen..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -393,7 +403,7 @@ const AksManagement: React.FC = () => {
             </label>
             <select
               id="category"
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
             >
@@ -412,7 +422,7 @@ const AksManagement: React.FC = () => {
                 setSelectedCategory('');
                 setPage(1);
               }}
-              className="btn-secondary inline-flex items-center"
+              className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
             >
               <FunnelIcon className="h-5 w-5 mr-2" />
               Filter zurücksetzen
@@ -426,25 +436,29 @@ const AksManagement: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Tree View */}
           <div className="lg:col-span-2">
-            <div className="card h-96">
-              <div className="flex items-center justify-between mb-4 pb-4 border-b">
-                <h3 className="text-lg font-medium text-gray-900">
-                  AKS-Hierarchie
-                </h3>
-                <div className="text-sm text-gray-500">
-                  Klicken Sie auf einen Eintrag für Details
+            <div className="bg-white rounded-lg shadow">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-gray-900">
+                    AKS-Hierarchie
+                  </h3>
+                  <div className="text-sm text-gray-500">
+                    Klicken Sie auf einen Eintrag für Details
+                  </div>
                 </div>
               </div>
-              <AksTreeView 
-                onSelectNode={setSelectedNode}
-                selectedNodeId={selectedNode?.id}
-              />
+              <div className="h-[600px] overflow-hidden">
+                <AksTreeView 
+                  onSelectNode={setSelectedNode}
+                  selectedNodeId={selectedNode?.id}
+                />
+              </div>
             </div>
           </div>
 
           {/* Details Panel */}
           <div>
-            <div className="card">
+            <div className="bg-white rounded-lg shadow p-6">
               {selectedNode ? (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -506,19 +520,19 @@ const AksManagement: React.FC = () => {
                   
                   <div className="mt-6 flex space-x-3">
                     <button 
-                      className="btn-primary text-sm"
+                      className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
                       onClick={() => handleEditAksCode(selectedNode)}
                     >
                       Bearbeiten
                     </button>
                     <button 
-                      className="btn-secondary text-sm"
+                      className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                       onClick={() => handleToggleStatus(selectedNode.id)}
                     >
                       {selectedNode.isActive ? 'Deaktivieren' : 'Aktivieren'}
                     </button>
                     <button 
-                      className="btn-secondary text-sm text-red-600"
+                      className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-red-600 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                       onClick={() => handleDeleteAksCode(selectedNode.id)}
                     >
                       Löschen
@@ -559,27 +573,27 @@ const AksManagement: React.FC = () => {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={handleBulkActivate}
-                    className="btn-secondary text-sm"
+                    className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                     disabled={bulkToggleStatusMutation.isLoading}
                   >
                     Aktivieren
                   </button>
                   <button
                     onClick={handleBulkDeactivate}
-                    className="btn-secondary text-sm"
+                    className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                     disabled={bulkToggleStatusMutation.isLoading}
                   >
                     Deaktivieren
                   </button>
                   <button
                     onClick={() => setShowBulkUpdateModal(true)}
-                    className="btn-secondary text-sm"
+                    className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                   >
                     Bearbeiten
                   </button>
                   <button
                     onClick={handleBulkDelete}
-                    className="btn-secondary text-sm text-red-600"
+                    className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-red-600 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                     disabled={bulkDeleteMutation.isLoading}
                   >
                     Löschen
@@ -589,7 +603,7 @@ const AksManagement: React.FC = () => {
             </div>
           )}
 
-          <div className="card overflow-hidden">
+          <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -599,7 +613,7 @@ const AksManagement: React.FC = () => {
                         type="checkbox"
                         checked={selectedIds.size > 0 && selectedIds.size === aksData?.data?.codes?.length}
                         onChange={(e) => e.target.checked ? handleSelectAll() : handleDeselectAll()}
-                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                       />
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -632,7 +646,7 @@ const AksManagement: React.FC = () => {
                         type="checkbox"
                         checked={selectedIds.has(aksCode.id)}
                         onChange={() => handleSelectToggle(aksCode.id)}
-                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -668,7 +682,7 @@ const AksManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button 
-                        className="text-primary-600 hover:text-primary-900 mr-4"
+                        className="text-indigo-600 hover:text-indigo-900 mr-4"
                         onClick={() => handleEditAksCode(aksCode)}
                       >
                         Bearbeiten
@@ -714,7 +728,7 @@ const AksManagement: React.FC = () => {
                       type="file"
                       accept=".xlsx,.xls"
                       onChange={handleFileSelect}
-                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
                     />
                   </div>
                   
@@ -734,14 +748,14 @@ const AksManagement: React.FC = () => {
                         setShowImportModal(false);
                         setImportFile(null);
                       }}
-                      className="btn-secondary"
+                      className="inline-flex items-center rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                     >
                       Abbrechen
                     </button>
                     <button
                       onClick={handleImport}
                       disabled={!importFile || importMutation.isLoading}
-                      className="btn-primary disabled:opacity-50"
+                      className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50"
                     >
                       {importMutation.isLoading ? 'Importiere...' : 'Importieren'}
                     </button>
@@ -800,7 +814,7 @@ const AksManagement: React.FC = () => {
                         setImportResult(null);
                         setImportFile(null);
                       }}
-                      className="btn-primary"
+                      className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
                     >
                       Schließen
                     </button>
@@ -831,6 +845,16 @@ const AksManagement: React.FC = () => {
         onSave={handleBulkUpdate}
         selectedCount={selectedIds.size}
         isLoading={bulkUpdateMutation.isLoading}
+      />
+
+      {/* AKS Import Modal */}
+      <AksImportModal
+        isOpen={showAksImportModal}
+        onClose={() => setShowAksImportModal(false)}
+        onSuccess={() => {
+          queryClient.invalidateQueries(['aks-codes']);
+          queryClient.invalidateQueries(['aks-tree-root']);
+        }}
       />
     </div>
   );

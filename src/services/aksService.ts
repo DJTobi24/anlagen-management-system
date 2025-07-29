@@ -120,14 +120,23 @@ export class AksService {
     const values: any[] = [];
     let paramCount = 1;
 
-    if (params.code) {
-      whereConditions.push(`c.code ILIKE $${paramCount++}`);
-      values.push(`%${params.code}%`);
-    }
+    // If both code and name are the same (typical when searching from frontend)
+    // treat it as a search term that should match either code OR name
+    if (params.code && params.name && params.code === params.name) {
+      whereConditions.push(`(c.code ILIKE $${paramCount} OR c.name ILIKE $${paramCount + 1})`);
+      values.push(`%${params.code}%`, `%${params.name}%`);
+      paramCount += 2;
+    } else {
+      // Otherwise, search separately
+      if (params.code) {
+        whereConditions.push(`c.code ILIKE $${paramCount++}`);
+        values.push(`%${params.code}%`);
+      }
 
-    if (params.name) {
-      whereConditions.push(`c.name ILIKE $${paramCount++}`);
-      values.push(`%${params.name}%`);
+      if (params.name) {
+        whereConditions.push(`c.name ILIKE $${paramCount++}`);
+        values.push(`%${params.name}%`);
+      }
     }
 
     if (params.category) {

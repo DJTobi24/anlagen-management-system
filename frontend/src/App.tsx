@@ -15,6 +15,8 @@ import AnlageNew from './pages/AnlageNew';
 import FMDataCollection from './pages/FMDataCollection';
 import Liegenschaften from './pages/Liegenschaften';
 import Objekte from './pages/Objekte';
+import Reports from './pages/Reports';
+import ImportReports from './pages/ImportReports';
 
 // ProtectedRoute component for future use
 // const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -37,7 +39,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -86,31 +88,27 @@ const AppRoutes: React.FC = () => {
           </Layout>
         </ProtectedRoute>
       } />
-      {user && user.rolle === 'admin' && (
-        <>
-          <Route path="/users" element={
-            <ProtectedRoute>
-              <Layout>
-                <Users />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/settings" element={
-            <ProtectedRoute>
-              <Layout>
-                <Settings />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/aks" element={
-            <ProtectedRoute>
-              <Layout>
-                <AksManagement />
-              </Layout>
-            </ProtectedRoute>
-          } />
-        </>
-      )}
+      <Route path="/aks" element={
+        <ProtectedRoute>
+          <Layout>
+            <AksManagement />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/users" element={
+        <ProtectedRoute>
+          <Layout>
+            {user && user.rolle === 'admin' ? <Users /> : <Navigate to="/" />}
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/settings" element={
+        <ProtectedRoute>
+          <Layout>
+            <Settings />
+          </Layout>
+        </ProtectedRoute>
+      } />
       <Route path="/fm-data-collection" element={
         <ProtectedRoute>
           <Layout>
@@ -136,6 +134,20 @@ const AppRoutes: React.FC = () => {
         <ProtectedRoute>
           <Layout>
             <Objekte />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/reports" element={
+        <ProtectedRoute>
+          <Layout>
+            <Reports />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/reports/imports" element={
+        <ProtectedRoute>
+          <Layout>
+            <ImportReports />
           </Layout>
         </ProtectedRoute>
       } />

@@ -37,12 +37,24 @@ const FMDataCollection: React.FC = () => {
     }
   );
 
-  // Fetch Buildings for selected Liegenschaft
-  const { data: buildings = [] } = useQuery(
-    ['buildings-fm', selectedPath.liegenschaft?.id],
-    () => selectedPath.liegenschaft ? fmDataService.getBuildings(selectedPath.liegenschaft.id) : Promise.resolve([]),
+  // Track which Liegenschaften have been expanded to load their buildings
+  const [loadedLiegenschaften, setLoadedLiegenschaften] = useState<Set<string>>(new Set());
+  
+  // Fetch all buildings for all loaded Liegenschaften
+  const { data: buildingsMap = {}, isLoading: isLoadingBuildings } = useQuery(
+    ['buildings-fm-map', Array.from(loadedLiegenschaften)],
+    async () => {
+      const map: Record<string, Building[]> = {};
+      await Promise.all(
+        Array.from(loadedLiegenschaften).map(async (liegenschaftId) => {
+          const buildings = await fmDataService.getBuildings(liegenschaftId);
+          map[liegenschaftId] = buildings;
+        })
+      );
+      return map;
+    },
     {
-      enabled: !!selectedPath.liegenschaft,
+      enabled: loadedLiegenschaften.size > 0,
       staleTime: 5 * 60 * 1000,
     }
   );
@@ -75,6 +87,8 @@ const FMDataCollection: React.FC = () => {
       newExpanded.delete(id);
     } else {
       newExpanded.add(id);
+      // Add to loaded Liegenschaften when expanding
+      setLoadedLiegenschaften(prev => new Set(prev).add(id));
     }
     setExpandedLiegenschaften(newExpanded);
   };
@@ -93,6 +107,9 @@ const FMDataCollection: React.FC = () => {
     setSelectedPath({ liegenschaft });
     if (!expandedLiegenschaften.has(liegenschaft.id)) {
       toggleLiegenschaft(liegenschaft.id);
+    } else {
+      // Ensure it's loaded even if already expanded
+      setLoadedLiegenschaften(prev => new Set(prev).add(liegenschaft.id));
     }
   };
 
@@ -242,7 +259,7 @@ const FMDataCollection: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Liegenschaften */}
-        <div className="card">
+        <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4 pb-4 border-b">
             <h3 className="text-lg font-medium text-gray-900 flex items-center">
               <MapPinIcon className="h-5 w-5 text-blue-600 mr-2" />
@@ -259,9 +276,7 @@ const FMDataCollection: React.FC = () => {
               {liegenschaften.map(liegenschaft => {
                 const isExpanded = expandedLiegenschaften.has(liegenschaft.id);
                 const isSelected = selectedPath.liegenschaft?.id === liegenschaft.id;
-                const liegenschaftBuildings = buildings.filter(b => 
-                  selectedPath.liegenschaft?.id === liegenschaft.id
-                );
+                const liegenschaftBuildings = buildingsMap[liegenschaft.id] || [];
                 
                 return (
                   <div key={liegenschaft.id}>
@@ -313,9 +328,14 @@ const FMDataCollection: React.FC = () => {
                     </div>
 
                     {/* Buildings */}
-                    {isExpanded && liegenschaftBuildings.length > 0 && (
+                    {isExpanded && (
                       <div className="ml-8 mt-2 space-y-1">
-                        {liegenschaftBuildings.map(building => (
+                        {liegenschaftBuildings.length === 0 ? (
+                          <div className="text-sm text-gray-500 italic px-3 py-2">
+                            Lade Gebäude...
+                          </div>
+                        ) : (
+                          liegenschaftBuildings.map(building => (
                           <div
                             key={building.id}
                             className={`flex items-center py-2 px-3 cursor-pointer transition-all duration-150 rounded-lg ${
@@ -339,7 +359,7 @@ const FMDataCollection: React.FC = () => {
                               )}
                             </div>
                           </div>
-                        ))}
+                        )))}
                       </div>
                     )}
                   </div>
@@ -350,7 +370,7 @@ const FMDataCollection: React.FC = () => {
         </div>
 
         {/* AKS Hierarchie */}
-        <div className="lg:col-span-2 card">
+        <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4 pb-4 border-b">
             <h3 className="text-lg font-medium text-gray-900 flex items-center">
               <DocumentTextIcon className="h-5 w-5 text-indigo-600 mr-2" />
@@ -396,7 +416,7 @@ const FMDataCollection: React.FC = () => {
 
       {/* Selected Facility Details */}
       {selectedPath.aksNode && selectedPath.aksNode.direct_anlage_count > 0 && (
-        <div className="card">
+        <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4 pb-4 border-b">
             <h3 className="text-lg font-medium text-gray-900 flex items-center">
               <WrenchScrewdriverIcon className="h-5 w-5 text-indigo-600 mr-2" />

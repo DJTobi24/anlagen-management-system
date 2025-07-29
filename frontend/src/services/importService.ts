@@ -20,12 +20,17 @@ export const importService = {
   },
 
   async getImportJobs(): Promise<ImportJob[]> {
-    const response = await api.get<ApiResponse<ImportJob[]>>('/import/jobs');
-    return response.data.data;
+    try {
+      const response = await api.get<ApiResponse<ImportJob[]>>('/import/jobs');
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Error fetching import jobs:', error);
+      return [];
+    }
   },
 
   async downloadTemplate(): Promise<Blob> {
-    const response = await api.get('/import/template', {
+    const response = await api.get('/import/sample/excel', {
       responseType: 'blob',
     });
     return response.data;
@@ -33,5 +38,29 @@ export const importService = {
 
   async cancelImport(jobId: string): Promise<void> {
     await api.post(`/import/cancel/${jobId}`);
+  },
+
+  async uploadExtendedFile(file: File): Promise<{
+    success: number;
+    failed: number;
+    errors: Array<{ row: number; error: string }>;
+    createdLiegenschaften: number;
+    createdGebaeude: number;
+  }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await api.post<ApiResponse<{
+      success: number;
+      failed: number;
+      errors: Array<{ row: number; error: string }>;
+      createdLiegenschaften: number;
+      createdGebaeude: number;
+    }>>('/import/upload/extended', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data.data;
   },
 };

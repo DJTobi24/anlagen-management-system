@@ -36,6 +36,14 @@ router.post(
   ImportController.uploadExcel
 );
 
+// Extended upload with metadata and auto-creation
+router.post(
+  '/upload/extended',
+  authorize(UserRole.ADMIN, UserRole.TECHNIKER),
+  ImportController.uploadMiddleware,
+  ImportController.uploadExtendedExcel
+);
+
 // Get all import jobs for mandant
 router.get(
   '/jobs',

@@ -4,7 +4,8 @@ import {
   getLiegenschaften,
   getBuildings,
   getAksTreeForBuilding,
-  getAnlagenForAks
+  getAnlagenForAks,
+  scanQrCode
 } from '../controllers/fmDataController';
 
 const router = Router();
@@ -23,5 +24,8 @@ router.get('/buildings/:buildingId/aks-tree', getAksTreeForBuilding);
 
 // Get anlagen for a specific AKS code in a building
 router.get('/buildings/:buildingId/aks/:aksCode/anlagen', getAnlagenForAks);
+
+// Scan QR code to find anlage
+router.get('/scan/:qrCode', scanQrCode);
 
 export default router;

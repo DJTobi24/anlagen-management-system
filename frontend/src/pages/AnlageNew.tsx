@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from 'react-query';
 import { anlageService } from '../services/anlageService';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import AksSelect from '../components/AksSelect';
 
 interface AnlageFormData {
   name: string;
@@ -106,15 +107,12 @@ const AnlageNew: React.FC = () => {
               <label htmlFor="aks_code" className="block text-sm font-medium text-gray-700">
                 AKS-Code *
               </label>
-              <input
-                type="text"
-                id="aks_code"
-                name="aks_code"
-                required
-                placeholder="z.B. AKS.03 oder AKS.03.330.01"
+              <AksSelect
                 value={formData.aks_code}
-                onChange={handleInputChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                onChange={(value) => setFormData(prev => ({ ...prev, aks_code: value }))}
+                required
+                placeholder="AKS-Code auswählen..."
+                className="mt-1"
               />
             </div>
 

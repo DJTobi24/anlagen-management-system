@@ -14,6 +14,10 @@ import {
 import { api } from '../services/api';
 import CreateLiegenschaftModal from '../components/CreateLiegenschaftModal';
 import EditLiegenschaftModal from '../components/EditLiegenschaftModal';
+import { Heading, Subheading } from '../components/ui/heading';
+import { Text } from '../components/ui/text';
+import { Button } from '../components/ui/button';
+import { Dialog, DialogBody, DialogActions } from '../components/ui/dialog';
 
 interface Liegenschaft {
   id: string;
@@ -76,15 +80,15 @@ const Liegenschaften: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-600">Fehler beim Laden der Liegenschaften</p>
+      <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
+        <Text className="text-red-600 dark:text-red-500">Fehler beim Laden der Liegenschaften</Text>
       </div>
     );
   }
@@ -92,24 +96,15 @@ const Liegenschaften: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="md:flex md:items-center md:justify-between">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-            Liegenschaften
-          </h2>
-          <p className="mt-1 text-sm text-gray-500">
-            Verwalten Sie Ihre Liegenschaften und deren Gebäude
-          </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <Heading>Liegenschaften</Heading>
+          <Text className="mt-2">Verwalten Sie Ihre Liegenschaften und deren Gebäude</Text>
         </div>
-        <div className="mt-4 flex md:mt-0 md:ml-4">
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Neue Liegenschaft
-          </button>
-        </div>
+        <Button onClick={() => setShowCreateModal(true)} color="indigo">
+          <PlusIcon className="size-4" data-slot="icon" />
+          Neue Liegenschaft
+        </Button>
       </div>
 
       {/* Liegenschaften Grid */}
@@ -117,67 +112,72 @@ const Liegenschaften: React.FC = () => {
         {liegenschaften.map((liegenschaft: Liegenschaft) => (
           <div
             key={liegenschaft.id}
-            className="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow"
+            className="overflow-hidden rounded-lg bg-white shadow-xs ring-1 ring-zinc-950/5 transition-shadow hover:shadow-sm dark:bg-zinc-900 dark:ring-white/10"
           >
-            <div className="p-5">
+            <div className="p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <BuildingOffice2Icon className="h-10 w-10 text-primary-600" />
+                  <div className="rounded-lg bg-indigo-100 p-3 dark:bg-indigo-900/20">
+                    <BuildingOffice2Icon className="size-6 text-indigo-600 dark:text-indigo-500" />
+                  </div>
                 </div>
                 <div className="ml-5 w-0 flex-1">
-                  <h3 className="text-lg font-medium text-gray-900 truncate">
+                  <Subheading level={3} className="truncate">
                     {liegenschaft.name}
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-500 truncate">
+                  </Subheading>
+                  <Text className="mt-1 truncate">
                     {liegenschaft.address}
-                  </p>
+                  </Text>
                 </div>
               </div>
               
               {liegenschaft.description && (
-                <p className="mt-3 text-sm text-gray-600">
+                <Text className="mt-3">
                   {liegenschaft.description}
-                </p>
+                </Text>
               )}
 
               <div className="mt-4 grid grid-cols-2 gap-4">
-                <div className="flex items-center text-sm text-gray-500">
-                  <BuildingOfficeIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                  {liegenschaft.objekte_count} Objekte
+                <div className="flex items-center">
+                  <BuildingOfficeIcon className="mr-1.5 size-5 text-zinc-400 dark:text-zinc-500" />
+                  <Text className="text-sm">{liegenschaft.objekte_count} Objekte</Text>
                 </div>
-                <div className="flex items-center text-sm text-gray-500">
-                  <WrenchScrewdriverIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                  {liegenschaft.anlagen_count} Anlagen
+                <div className="flex items-center">
+                  <WrenchScrewdriverIcon className="mr-1.5 size-5 text-zinc-400 dark:text-zinc-500" />
+                  <Text className="text-sm">{liegenschaft.anlagen_count} Anlagen</Text>
                 </div>
               </div>
             </div>
 
-            <div className="bg-gray-50 px-5 py-3">
-              <div className="flex justify-between">
-                <div className="flex space-x-4">
-                  <button
+            <div className="border-t border-zinc-950/5 bg-zinc-50 px-6 py-3 dark:border-white/5 dark:bg-zinc-800/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Button
                     onClick={() => navigate(`/liegenschaften/${liegenschaft.id}/objekte`)}
-                    className="text-sm text-primary-600 hover:text-primary-900 font-medium flex items-center"
+                    plain
+                    className="text-sm"
                   >
-                    <ArrowRightIcon className="h-4 w-4 mr-1" />
+                    <ArrowRightIcon className="size-4" data-slot="icon" />
                     Objekte anzeigen
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => setEditingLiegenschaft(liegenschaft)}
-                    className="text-sm text-primary-600 hover:text-primary-900 font-medium flex items-center"
+                    plain
+                    className="text-sm"
                   >
-                    <PencilIcon className="h-4 w-4 mr-1" />
+                    <PencilIcon className="size-4" data-slot="icon" />
                     Bearbeiten
-                  </button>
+                  </Button>
                 </div>
-                <button
+                <Button
                   onClick={() => handleDelete(liegenschaft)}
-                  className="text-sm text-red-600 hover:text-red-900 font-medium flex items-center"
+                  plain
+                  className="text-sm text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400"
                   disabled={liegenschaft.objekte_count > 0}
                 >
-                  <TrashIcon className="h-4 w-4 mr-1" />
+                  <TrashIcon className="size-4" data-slot="icon" />
                   Löschen
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -187,19 +187,18 @@ const Liegenschaften: React.FC = () => {
       {/* Empty State */}
       {liegenschaften.length === 0 && (
         <div className="text-center py-12">
-          <BuildingOffice2Icon className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">Keine Liegenschaften</h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <BuildingOffice2Icon className="mx-auto size-12 text-zinc-400 dark:text-zinc-500" />
+          <Subheading level={3} className="mt-2">
+            Keine Liegenschaften
+          </Subheading>
+          <Text className="mt-1">
             Erstellen Sie Ihre erste Liegenschaft, um zu beginnen.
-          </p>
+          </Text>
           <div className="mt-6">
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-            >
-              <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
+            <Button onClick={() => setShowCreateModal(true)} color="indigo">
+              <PlusIcon className="size-4" data-slot="icon" />
               Neue Liegenschaft
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -227,54 +226,40 @@ const Liegenschaften: React.FC = () => {
         />
       )}
 
-      {/* Delete Confirmation Modal */}
-      {deletingLiegenschaft && (
-        <div className="fixed z-10 inset-0 overflow-y-auto">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deletingLiegenschaft} onClose={() => setDeletingLiegenschaft(null)}>
+        <DialogBody>
+          <div className="flex items-center gap-4">
+            <div className="flex-shrink-0">
+              <div className="rounded-full bg-red-100 p-3 dark:bg-red-900/20">
+                <ExclamationTriangleIcon className="size-6 text-red-600 dark:text-red-500" />
+              </div>
             </div>
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="sm:flex sm:items-start">
-                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                    <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
-                  </div>
-                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">
-                      Liegenschaft löschen
-                    </h3>
-                    <div className="mt-2">
-                      <p className="text-sm text-gray-500">
-                        Sind Sie sicher, dass Sie die Liegenschaft "{deletingLiegenschaft.name}" löschen möchten? 
-                        Diese Aktion kann nicht rückgängig gemacht werden.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button
-                  type="button"
-                  onClick={confirmDelete}
-                  disabled={deleteMutation.isLoading}
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  {deleteMutation.isLoading ? 'Löschen...' : 'Löschen'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDeletingLiegenschaft(null)}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  Abbrechen
-                </button>
-              </div>
+            <div>
+              <Subheading level={3}>Liegenschaft löschen</Subheading>
+              <Text className="mt-2">
+                Sind Sie sicher, dass Sie die Liegenschaft "{deletingLiegenschaft?.name}" löschen möchten? 
+                Diese Aktion kann nicht rückgängig gemacht werden.
+              </Text>
             </div>
           </div>
-        </div>
-      )}
+        </DialogBody>
+        <DialogActions>
+          <Button
+            plain
+            onClick={() => setDeletingLiegenschaft(null)}
+          >
+            Abbrechen
+          </Button>
+          <Button
+            color="red"
+            onClick={confirmDelete}
+            disabled={deleteMutation.isLoading}
+          >
+            {deleteMutation.isLoading ? 'Löschen...' : 'Löschen'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 };

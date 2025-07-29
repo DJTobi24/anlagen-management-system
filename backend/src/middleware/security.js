@@ -70,7 +70,7 @@ const generalLimiter = rateLimit({
 // Rate Limiting - Auth-Endpunkte (strenger)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 Minuten
-  max: 5, // 5 Login-Versuche pro IP
+  max: process.env.NODE_ENV === 'development' ? 50 : 10, // Mehr Versuche in Development
   message: {
     error: 'Too many authentication attempts, please try again later.',
     retryAfter: '15 minutes'

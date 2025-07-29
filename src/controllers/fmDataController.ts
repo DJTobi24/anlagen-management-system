@@ -42,8 +42,9 @@ export const getBuildings = async (req: AuthRequest, res: Response): Promise<voi
         COUNT(DISTINCT a.id) as anlage_count
       FROM objekte o
       LEFT JOIN anlagen a ON a.objekt_id = o.id
+      INNER JOIN liegenschaften l ON o.liegenschaft_id = l.id
       WHERE o.liegenschaft_id = $1 
-        AND o.mandant_id = $2 
+        AND l.mandant_id = $2 
         AND o.is_active = true
       GROUP BY o.id, o.name
       ORDER BY o.name
@@ -76,8 +77,10 @@ export const getAksTreeForBuilding = async (req: AuthRequest, res: Response): Pr
         COUNT(a.id) as anlage_count
       FROM aks_codes aks
       INNER JOIN anlagen a ON a.aks_code = aks.code
+      INNER JOIN objekte o ON a.objekt_id = o.id
+      INNER JOIN liegenschaften l ON o.liegenschaft_id = l.id
       WHERE a.objekt_id = $1 
-        AND a.mandant_id = $2 
+        AND l.mandant_id = $2 
         AND a.is_active = true
         AND aks.is_active = true
       GROUP BY aks.code, aks.name, aks.description, aks.level, aks.parent_code, aks.is_category, aks.sort_order
@@ -203,9 +206,11 @@ export const getAnlagenForAks = async (req: AuthRequest, res: Response): Promise
         aks.maintenance_interval_months
       FROM anlagen a
       INNER JOIN aks_codes aks ON aks.code = a.aks_code
+      INNER JOIN objekte o ON a.objekt_id = o.id
+      INNER JOIN liegenschaften l ON o.liegenschaft_id = l.id
       WHERE a.objekt_id = $1 
         AND a.aks_code = $2
-        AND a.mandant_id = $3
+        AND l.mandant_id = $3
         AND a.is_active = true
       ORDER BY a.name
     `;
@@ -214,6 +219,104 @@ export const getAnlagenForAks = async (req: AuthRequest, res: Response): Promise
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching anlagen:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Scan QR code to find anlage
+export const scanQrCode = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { qrCode } = req.params;
+    const mandant_id = req.user?.mandantId || req.mandantId;
+
+    // Extract ID from QR code if it's in format "ANLAGE:{uuid}"
+    let searchId = qrCode;
+    if (qrCode.startsWith('ANLAGE:')) {
+      searchId = qrCode.substring(7);
+    }
+
+    // Check if searchId is a valid UUID format
+    const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(searchId);
+    
+    let query;
+    let params;
+    
+    if (isValidUuid) {
+      // If we have a valid UUID, search by ID
+      query = `
+        SELECT 
+          a.id,
+          a.name,
+          a.t_nummer,
+          a.aks_code,
+          a.description,
+          a.status,
+          a.zustands_bewertung,
+          a.qr_code,
+          a.dynamic_fields,
+          o.id as objekt_id,
+          o.name as objekt_name,
+          l.id as liegenschaft_id,
+          l.name as liegenschaft_name,
+          aks.name as aks_name,
+          aks.maintenance_interval_months
+        FROM anlagen a
+        INNER JOIN objekte o ON a.objekt_id = o.id
+        INNER JOIN liegenschaften l ON o.liegenschaft_id = l.id
+        LEFT JOIN aks_codes aks ON aks.code = a.aks_code
+        WHERE l.mandant_id = $1
+          AND a.is_active = true
+          AND a.id = $2::uuid
+        LIMIT 1
+      `;
+      params = [mandant_id, searchId];
+    } else {
+      // Otherwise search by QR code content
+      query = `
+        SELECT 
+          a.id,
+          a.name,
+          a.t_nummer,
+          a.aks_code,
+          a.description,
+          a.status,
+          a.zustands_bewertung,
+          a.qr_code,
+          a.dynamic_fields,
+          o.id as objekt_id,
+          o.name as objekt_name,
+          l.id as liegenschaft_id,
+          l.name as liegenschaft_name,
+          aks.name as aks_name,
+          aks.maintenance_interval_months
+        FROM anlagen a
+        INNER JOIN objekte o ON a.objekt_id = o.id
+        INNER JOIN liegenschaften l ON o.liegenschaft_id = l.id
+        LEFT JOIN aks_codes aks ON aks.code = a.aks_code
+        WHERE l.mandant_id = $1
+          AND a.is_active = true
+          AND a.qr_code LIKE $2
+        LIMIT 1
+      `;
+      params = [mandant_id, `%${qrCode}%`];
+    }
+    
+    const result = await pool.query(query, params);
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ 
+        message: 'Anlage not found for QR code',
+        qrCode: qrCode 
+      });
+      return;
+    }
+
+    res.json({
+      message: 'Anlage found',
+      data: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error scanning QR code:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };

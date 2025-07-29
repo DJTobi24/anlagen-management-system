@@ -1,11 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { anlageService } from '../services/anlageService';
-import { ArrowLeftIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { 
+  ArrowLeftIcon, 
+  PencilIcon, 
+  InformationCircleIcon,
+  TagIcon,
+  ClipboardDocumentListIcon
+} from '@heroicons/react/24/outline';
 
 const AnlageDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [activeTab, setActiveTab] = useState<'details' | 'metadata' | 'history'>('details');
   
   const { data: anlage, isLoading, error } = useQuery(
     ['anlage', id],
@@ -72,7 +79,48 @@ const AnlageDetail: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('details')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'details'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <InformationCircleIcon className="h-5 w-5 inline-block mr-2" />
+            Details
+          </button>
+          <button
+            onClick={() => setActiveTab('metadata')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'metadata'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <TagIcon className="h-5 w-5 inline-block mr-2" />
+            Metadaten
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'history'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <ClipboardDocumentListIcon className="h-5 w-5 inline-block mr-2" />
+            Historie
+          </button>
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'details' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Grunddaten */}
         <div className="lg:col-span-2">
           <div className="card">
@@ -162,6 +210,110 @@ const AnlageDetail: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
+
+      {activeTab === 'metadata' && (
+        <div className="card">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Import-Metadaten
+          </h3>
+          {anlage.metadaten && Object.keys(anlage.metadaten).length > 0 ? (
+            <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+              {anlage.metadaten.vertrag && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Vertrag</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{anlage.metadaten.vertrag}</dd>
+                </div>
+              )}
+              {anlage.metadaten.suchbegriff && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Suchbegriff</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{anlage.metadaten.suchbegriff}</dd>
+                </div>
+              )}
+              {anlage.metadaten.suchbegriff1 && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Suchbegriff 1</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{anlage.metadaten.suchbegriff1}</dd>
+                </div>
+              )}
+              {anlage.metadaten.kd_wirtschaftseinheit && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">KD Wirtschaftseinheit</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{anlage.metadaten.kd_wirtschaftseinheit}</dd>
+                </div>
+              )}
+              {anlage.metadaten.anzahl !== undefined && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Anzahl</dt>
+                  <dd className="mt-1 text-sm text-gray-900">
+                    {anlage.metadaten.anzahl} {anlage.metadaten.einheit || ''}
+                  </dd>
+                </div>
+              )}
+              {anlage.metadaten.vertragspositionen_beschreibung && (
+                <div className="sm:col-span-2">
+                  <dt className="text-sm font-medium text-gray-500">Vertragspositionen Beschreibung</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{anlage.metadaten.vertragspositionen_beschreibung}</dd>
+                </div>
+              )}
+              {anlage.metadaten.kunde_ansprechpartner && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Kunde Ansprechpartner</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{anlage.metadaten.kunde_ansprechpartner}</dd>
+                </div>
+              )}
+              {anlage.metadaten.attributsatz && (
+                <div className="sm:col-span-2">
+                  <dt className="text-sm font-medium text-gray-500">Attributsatz</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{anlage.metadaten.attributsatz}</dd>
+                </div>
+              )}
+              {anlage.metadaten.code && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Code</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{anlage.metadaten.code}</dd>
+                </div>
+              )}
+              {anlage.metadaten.aks_coba_id && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">AKS-Coba-ID</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{anlage.metadaten.aks_coba_id}</dd>
+                </div>
+              )}
+              {anlage.metadaten.aks_dl_alt && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">AKS-DL-Alt</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{anlage.metadaten.aks_dl_alt}</dd>
+                </div>
+              )}
+              {anlage.pruefpflichtig !== undefined && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Prüfpflichtig</dt>
+                  <dd className="mt-1 text-sm text-gray-900">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      anlage.pruefpflichtig ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {anlage.pruefpflichtig ? 'Ja' : 'Nein'}
+                    </span>
+                  </dd>
+                </div>
+              )}
+            </dl>
+          ) : (
+            <p className="text-gray-500 text-sm">Keine Metadaten vorhanden</p>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'history' && (
+        <div className="card">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Änderungshistorie
+          </h3>
+          <p className="text-gray-500 text-sm">Historie wird in einer zukünftigen Version implementiert</p>
+        </div>
+      )}
     </div>
   );
 };
