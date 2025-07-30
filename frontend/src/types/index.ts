@@ -2,7 +2,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  rolle: 'admin' | 'techniker' | 'aufnehmer';
+  rolle: 'admin' | 'techniker' | 'aufnehmer' | 'supervisor' | 'mitarbeiter';
   mandant_id: string;
   mandant?: Mandant;
   aktiv: boolean;

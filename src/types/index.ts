@@ -14,7 +14,9 @@ export interface User {
 export enum UserRole {
   ADMIN = 'admin',
   TECHNIKER = 'techniker',
-  AUFNEHMER = 'aufnehmer'
+  AUFNEHMER = 'aufnehmer',
+  MITARBEITER = 'mitarbeiter',
+  SUPERVISOR = 'supervisor'
 }
 
 export interface Mandant {

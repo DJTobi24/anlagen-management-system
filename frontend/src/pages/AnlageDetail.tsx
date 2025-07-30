@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
+import QRCode from 'react-qr-code';
 import { anlageService } from '../services/anlageService';
 import { 
   ArrowLeftIcon, 
   PencilIcon, 
   InformationCircleIcon,
   TagIcon,
-  ClipboardDocumentListIcon
+  ClipboardDocumentListIcon,
+  ClockIcon,
+  UserIcon,
+  DevicePhoneMobileIcon,
+  ComputerDesktopIcon
 } from '@heroicons/react/24/outline';
 
 const AnlageDetail: React.FC = () => {
@@ -156,6 +161,20 @@ const AnlageDetail: React.FC = () => {
               </div>
             </dl>
           </div>
+          
+          {/* Attributsatz - Wichtige Anlageninformationen */}
+          {anlage.metadaten?.attributsatz && (
+            <div className="card mt-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Anlagenbeschreibung
+              </h3>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-900 whitespace-pre-line">
+                  {anlage.metadaten.attributsatz}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Wartung */}
@@ -176,13 +195,16 @@ const AnlageDetail: React.FC = () => {
                 QR-Code
               </h3>
               <div className="text-center">
-                <div className="inline-block p-4 bg-white border border-gray-200 rounded-lg">
-                  {/* QR-Code would be generated here */}
-                  <div className="w-32 h-32 bg-gray-100 flex items-center justify-center text-xs text-gray-500">
-                    QR-Code
-                    <br />
+                <div className="inline-block p-4 bg-white border-2 border-gray-300 rounded-lg shadow-sm">
+                  <QRCode 
+                    value={anlage.qr_code} 
+                    size={128}
+                    style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                    viewBox={`0 0 128 128`}
+                  />
+                  <p className="mt-3 text-sm font-medium text-gray-900">
                     {anlage.qr_code}
-                  </div>
+                  </p>
                 </div>
               </div>
             </div>
@@ -307,12 +329,135 @@ const AnlageDetail: React.FC = () => {
       )}
 
       {activeTab === 'history' && (
-        <div className="card">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Änderungshistorie
-          </h3>
-          <p className="text-gray-500 text-sm">Historie wird in einer zukünftigen Version implementiert</p>
+        <HistoryTab anlageId={id!} />
+      )}
+    </div>
+  );
+};
+
+const HistoryTab: React.FC<{ anlageId: string }> = ({ anlageId }) => {
+  const { data: history, isLoading } = useQuery(
+    ['anlage-history', anlageId],
+    () => anlageService.getAnlageHistory(anlageId)
+  );
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  const formatFieldName = (field: string): string => {
+    const fieldNames: Record<string, string> = {
+      name: 'Bezeichnung',
+      t_nummer: 'T-Nummer',
+      aks_code: 'AKS-Code',
+      status: 'Status',
+      zustands_bewertung: 'Zustandsbewertung',
+      description: 'Beschreibung',
+      metadaten: 'Metadaten'
+    };
+    return fieldNames[field] || field;
+  };
+
+  const formatValue = (value: any): string => {
+    if (value === null || value === undefined) return '-';
+    if (typeof value === 'object') return JSON.stringify(value, null, 2);
+    return String(value);
+  };
+
+  const getSourceIcon = (source: string) => {
+    switch (source) {
+      case 'pwa':
+        return <DevicePhoneMobileIcon className="h-5 w-5 text-blue-500" />;
+      case 'web':
+        return <ComputerDesktopIcon className="h-5 w-5 text-gray-500" />;
+      default:
+        return <div className="h-5 w-5" />;
+    }
+  };
+
+  return (
+    <div className="card">
+      <h3 className="text-lg font-medium text-gray-900 mb-4">
+        Änderungshistorie
+      </h3>
+      {history && history.length > 0 ? (
+        <div className="flow-root">
+          <ul className="-mb-8">
+            {history.map((item, idx) => (
+              <li key={item.id}>
+                <div className="relative pb-8">
+                  {idx !== history.length - 1 && (
+                    <span
+                      className="absolute left-5 top-5 -ml-px h-full w-0.5 bg-gray-200"
+                      aria-hidden="true"
+                    />
+                  )}
+                  <div className="relative flex items-start space-x-3">
+                    <div>
+                      <div className="relative px-1">
+                        <div className="h-8 w-8 bg-gray-100 rounded-full ring-8 ring-white flex items-center justify-center">
+                          {getSourceIcon(item.quelle)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div>
+                        <div className="text-sm">
+                          <span className="font-medium text-gray-900">
+                            {item.benutzer_name}
+                          </span>
+                          {' '}
+                          <span className="text-gray-500">
+                            hat {item.aktion === 'erstellt' ? 'die Anlage erstellt' : 'die Anlage aktualisiert'}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-sm text-gray-500 flex items-center space-x-2">
+                          <ClockIcon className="h-4 w-4" />
+                          <span>{new Date(item.created_at).toLocaleString('de-DE')}</span>
+                          <span className="text-gray-400">•</span>
+                          <span className="capitalize">{item.quelle}</span>
+                        </p>
+                      </div>
+                      {item.geaenderte_felder && item.geaenderte_felder.length > 0 && (
+                        <div className="mt-2 text-sm text-gray-700">
+                          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                            {item.geaenderte_felder.map((field: string) => (
+                              <div key={field} className="flex flex-col space-y-1">
+                                <span className="font-medium text-gray-700">
+                                  {formatFieldName(field)}:
+                                </span>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                  <div className="bg-red-50 rounded p-2">
+                                    <span className="text-xs text-red-700 font-medium">Alt:</span>
+                                    <pre className="text-xs text-red-600 mt-1 whitespace-pre-wrap">
+                                      {formatValue(item.alte_werte?.[field])}
+                                    </pre>
+                                  </div>
+                                  <div className="bg-green-50 rounded p-2">
+                                    <span className="text-xs text-green-700 font-medium">Neu:</span>
+                                    <pre className="text-xs text-green-600 mt-1 whitespace-pre-wrap">
+                                      {formatValue(item.neue_werte?.[field])}
+                                    </pre>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
+      ) : (
+        <p className="text-gray-500 text-sm">Keine Änderungen vorhanden</p>
       )}
     </div>
   );

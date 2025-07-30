@@ -8,6 +8,8 @@ import {
   FunnelIcon,
   ChevronDownIcon,
   BuildingOfficeIcon,
+  EyeIcon,
+  PencilIcon,
 } from '@heroicons/react/24/outline';
 import { Menu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
@@ -15,8 +17,9 @@ import { Fragment } from 'react';
 const Anlagen: React.FC = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [searchInput, setSearchInput] = useState('');
 
-  const { data, isLoading, error } = useQuery(
+  const { data, isLoading, error, refetch } = useQuery(
     ['anlagen', search, statusFilter],
     () => anlageService.getAnlagen({
       search: search || undefined,
@@ -29,6 +32,7 @@ const Anlagen: React.FC = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setSearch(searchInput);
   };
 
   if (isLoading) {
@@ -99,8 +103,13 @@ const Anlagen: React.FC = () => {
                   id="search"
                   className="block w-full rounded-md border-0 py-2 pl-10 pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                   placeholder="Suchen nach Bezeichnung, Nummer, Hersteller..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      setSearch(searchInput);
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -180,14 +189,27 @@ const Anlagen: React.FC = () => {
               </Menu>
             </div>
 
-            <div className="sm:col-span-1">
+            <div className="sm:col-span-1 flex gap-2">
               <button
                 type="submit"
                 onClick={handleSearch}
-                className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                className="flex-1 inline-flex justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >
                 Suchen
               </button>
+              {(search || statusFilter) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch('');
+                    setSearchInput('');
+                    setStatusFilter('');
+                  }}
+                  className="inline-flex justify-center rounded-md bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-300"
+                >
+                  Zurücksetzen
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -195,7 +217,8 @@ const Anlagen: React.FC = () => {
 
       {/* Table */}
       <div className="bg-white shadow rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -213,8 +236,8 @@ const Anlagen: React.FC = () => {
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Wartung
               </th>
-              <th scope="col" className="relative px-6 py-3">
-                <span className="sr-only">Aktionen</span>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Aktionen
               </th>
             </tr>
           </thead>
@@ -230,6 +253,11 @@ const Anlagen: React.FC = () => {
                       <div className="text-sm text-gray-500">
                         {anlage.t_nummer || 'Keine T-Nummer'}
                       </div>
+                      {anlage.metadaten?.attributsatz && (
+                        <div className="text-xs text-gray-600 mt-1 max-w-xs truncate" title={anlage.metadaten.attributsatz}>
+                          {anlage.metadaten.attributsatz}
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -248,12 +276,22 @@ const Anlagen: React.FC = () => {
                     -
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Link
-                      to={`/anlagen/${anlage.id}`}
-                      className="text-indigo-600 hover:text-indigo-900"
-                    >
-                      Details
-                    </Link>
+                    <div className="flex items-center justify-end space-x-1">
+                      <Link
+                        to={`/anlagen/${anlage.id}`}
+                        className="p-1 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded"
+                        title="Details anzeigen"
+                      >
+                        <EyeIcon className="h-5 w-5" />
+                      </Link>
+                      <Link
+                        to={`/anlagen/${anlage.id}/edit`}
+                        className="p-1 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded"
+                        title="Anlage bearbeiten"
+                      >
+                        <PencilIcon className="h-5 w-5" />
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -269,6 +307,7 @@ const Anlagen: React.FC = () => {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

@@ -1,0 +1,42 @@
+{
+  "short_name": "AMS Aufnahme",
+  "name": "Anlagen Management - Datenaufnahme",
+  "description": "Offline-fähige App für die Datenaufnahme von Anlagen vor Ort",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#4F46E5",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Meine Aufnahmen",
+      "short_name": "Aufnahmen",
+      "description": "Direkt zu meinen Datenaufnahmen",
+      "url": "/aufnahmen",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Sync",
+      "short_name": "Sync",
+      "description": "Daten synchronisieren",
+      "url": "/sync",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

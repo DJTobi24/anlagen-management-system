@@ -22,6 +22,7 @@ router.get('/', AnlageController.getAnlagen);
 
 // Generic routes with ID parameter (must be last)
 router.get('/:id', AnlageController.getAnlageById);
+router.get('/:id/history', AnlageController.getAnlageHistory);
 router.put('/:id', authorize(UserRole.ADMIN, UserRole.TECHNIKER), AnlageController.updateAnlage);
 router.delete('/:id', authorize(UserRole.ADMIN), AnlageController.deleteAnlage);
 

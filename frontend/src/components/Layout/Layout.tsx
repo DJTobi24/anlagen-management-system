@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   HomeIcon,
@@ -14,6 +14,8 @@ import {
   Bars3Icon,
   XMarkIcon,
   DocumentChartBarIcon,
+  CameraIcon,
+  ClipboardDocumentCheckIcon,
 } from '@heroicons/react/24/outline';
 import { Avatar } from '../ui/avatar';
 import { Dropdown, DropdownButton, DropdownItem, DropdownLabel, DropdownMenu } from '../ui/dropdown';
@@ -22,12 +24,16 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  console.log('User in Layout:', user); // Debug log
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: HomeIcon },
     { name: 'Anlagen', href: '/anlagen', icon: BuildingOfficeIcon },
     { name: 'Liegenschaften', href: '/liegenschaften', icon: BuildingOffice2Icon },
     { name: 'FM-Datenaufnahme', href: '/fm-data-collection', icon: ClipboardDocumentListIcon },
+    { name: 'Datenaufnahme-Verwaltung', href: '/datenaufnahme', icon: ClipboardDocumentCheckIcon },
+    { name: 'Meine Aufnahmen', href: '/meine-datenaufnahmen', icon: CameraIcon, role: 'mitarbeiter' },
     { name: 'Import', href: '/import', icon: DocumentArrowUpIcon },
     { name: 'Reports', href: '/reports', icon: DocumentChartBarIcon },
   ];
@@ -44,8 +50,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const Icon = item.icon;
     
     return (
-      <a
-        href={item.href}
+      <Link
+        to={item.href}
         className={`
           group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200
           ${isActive 
@@ -62,7 +68,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           }
         `} />
         {item.name}
-      </a>
+      </Link>
     );
   };
 
@@ -102,11 +108,13 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 px-2 py-4">
-          {navigation.map((item) => (
-            <NavLink key={item.name} item={item} />
-          ))}
+          {navigation
+            .filter(item => !item.role || item.role === user?.rolle || user?.rolle === 'admin')
+            .map((item) => (
+              <NavLink key={item.name} item={item} />
+            ))}
 
-          {user?.rolle === 'admin' && (
+          {(user?.rolle === 'admin' || user?.rolle === 'supervisor') && (
             <>
               <div className="my-3 border-t border-gray-200 dark:border-gray-700" />
               <div className="px-3 py-2">
@@ -156,7 +164,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     className="h-8 w-8"
                   />
                   <div className="hidden lg:block text-left">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">{user?.name}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{user?.name || 'Loading...'}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">{user?.mandant?.name}</p>
                   </div>
                 </DropdownButton>

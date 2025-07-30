@@ -169,12 +169,26 @@ export class AnlageService {
       zustandsBewertung: number;
       dynamicFields: Record<string, any>;
       isActive: boolean;
-    }>
+      metadaten?: Record<string, any>;
+    }>,
+    user?: { id: string; name: string; email: string },
+    source: string = 'web'
   ): Promise<Anlage> {
     const client = await pool.connect();
     
     try {
       await client.query('BEGIN');
+      
+      // Set session context for audit logging
+      if (user) {
+        console.log('Setting session context for user:', user);
+        await client.query(
+          'SELECT set_session_context($1::uuid, $2, $3, $4)',
+          [user.id, user.name || 'Unbekannt', user.email || 'unknown@example.com', source]
+        );
+      } else {
+        console.warn('No user context provided for audit logging');
+      }
 
       const checkQuery = `
         SELECT a.id 
@@ -225,6 +239,10 @@ export class AnlageService {
       if (updateData.isActive !== undefined) {
         fields.push(`is_active = $${paramCount++}`);
         values.push(updateData.isActive);
+      }
+      if (updateData.metadaten !== undefined) {
+        fields.push(`metadaten = COALESCE(metadaten, '{}'::jsonb) || $${paramCount++}::jsonb`);
+        values.push(JSON.stringify(updateData.metadaten));
       }
 
       if (fields.length === 0) {
@@ -358,5 +376,27 @@ export class AnlageService {
     // Da wir noch keine Wartungstabelle haben, geben wir erstmal eine leere Liste zurück
     // TODO: Implementierung wenn Wartungstabelle existiert
     return [];
+  }
+
+  static async getAnlageHistory(id: string, mandantId: string): Promise<any[]> {
+    const query = `
+      SELECT 
+        ah.*,
+        CONCAT(u.first_name, ' ', u.last_name) as benutzer_vollname
+      FROM aenderungshistorie ah
+      LEFT JOIN users u ON ah.benutzer_id = u.id
+      WHERE ah.entity_type = 'anlage' 
+        AND ah.entity_id = $1
+        AND EXISTS (
+          SELECT 1 FROM anlagen a
+          JOIN objekte o ON a.objekt_id = o.id
+          JOIN liegenschaften l ON o.liegenschaft_id = l.id
+          WHERE a.id = $1 AND l.mandant_id = $2
+        )
+      ORDER BY ah.created_at DESC
+    `;
+
+    const { rows } = await pool.query(query, [id, mandantId]);
+    return rows;
   }
 }

@@ -8,6 +8,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,6 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (token) {
         try {
           const userData = await authService.getCurrentUser();
+          console.log('User data from API:', userData); // Debug log
           setUser(userData);
         } catch (error) {
           localStorage.removeItem('auth_token');
@@ -51,6 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Get user data after successful login
       const userData = await authService.getCurrentUser();
+      console.log('User data after login:', userData); // Debug log
       setUser(userData);
       
       toast.success('Erfolgreich angemeldet!');
@@ -69,12 +72,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     toast.success('Erfolgreich abgemeldet');
   };
+  
+  const refreshUser = async () => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      try {
+        const userData = await authService.getCurrentUser();
+        console.log('Refreshed user data:', userData); // Debug log
+        setUser(userData);
+      } catch (error) {
+        console.error('Failed to refresh user data:', error);
+      }
+    }
+  };
 
   const value: AuthContextType = {
     user,
     loading,
     login,
     logout,
+    refreshUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

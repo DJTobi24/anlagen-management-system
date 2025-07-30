@@ -24,6 +24,8 @@ const updateAnlageSchema = Joi.object({
   zustandsBewertung: Joi.number().integer().min(1).max(5).optional(),
   dynamicFields: Joi.object().optional(),
   isActive: Joi.boolean().optional(),
+  notizen: Joi.string().optional().allow(''), // Added for PWA compatibility
+  metadaten: Joi.object().optional(), // Added for metadata updates
 });
 
 const searchAnlagenSchema = Joi.object({
@@ -123,7 +125,15 @@ export class AnlageController {
         throw createError(error.details[0].message, 400);
       }
 
-      const anlage = await AnlageService.updateAnlage(id, req.mandantId, value);
+      const user = req.user ? {
+        id: req.user.id,
+        name: `${req.user.firstName} ${req.user.lastName}`,
+        email: req.user.email
+      } : undefined;
+      
+      const source = req.headers['x-request-source'] as string || 'web';
+      
+      const anlage = await AnlageService.updateAnlage(id, req.mandantId, value, user, source);
 
       res.json({
         message: 'Anlage updated successfully',
@@ -202,6 +212,24 @@ export class AnlageController {
       res.json({
         message: 'Wartungen retrieved successfully',
         data: wartungen,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getAnlageHistory(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.mandantId) {
+        throw createError('Mandant ID required', 400);
+      }
+      
+      const { id } = req.params;
+      const history = await AnlageService.getAnlageHistory(id, req.mandantId);
+      
+      res.json({
+        message: 'Historie erfolgreich abgerufen',
+        data: history,
       });
     } catch (error) {
       next(error);

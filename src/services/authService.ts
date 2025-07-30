@@ -152,6 +152,9 @@ export class AuthService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
 
+    // Delete any existing tokens for this exact token value to prevent duplicates
+    await pool.query('DELETE FROM refresh_tokens WHERE token = $1', [token]);
+
     await pool.query(
       'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)',
       [userId, token, expiresAt]

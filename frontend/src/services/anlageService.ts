@@ -22,7 +22,17 @@ export const anlageService = {
   },
 
   async updateAnlage(id: string, data: Partial<Anlage>): Promise<Anlage> {
-    const response = await api.put<ApiResponse<Anlage>>(`/anlagen/${id}`, data);
+    // Transform field names to match backend expectations
+    const transformedData: any = {};
+    if (data.t_nummer !== undefined) transformedData.tNummer = data.t_nummer;
+    if (data.aks_code !== undefined) transformedData.aksCode = data.aks_code;
+    if (data.name !== undefined) transformedData.name = data.name;
+    if (data.description !== undefined) transformedData.description = data.description;
+    if (data.status !== undefined) transformedData.status = data.status;
+    if (data.zustands_bewertung !== undefined) transformedData.zustandsBewertung = data.zustands_bewertung;
+    if (data.metadaten !== undefined) transformedData.metadaten = data.metadaten;
+    
+    const response = await api.put<ApiResponse<Anlage>>(`/anlagen/${id}`, transformedData);
     return response.data.data;
   },
 
@@ -46,4 +56,18 @@ export const anlageService = {
     });
     return response.data.data;
   },
+
+  async getAnlagenByObjekt(objektId: string): Promise<Anlage[]> {
+    const response = await api.get<ApiResponse<Anlage[]>>('/anlagen', {
+      params: { objekt_id: objektId }
+    });
+    return response.data.data;
+  },
+
+  async getAnlageHistory(id: string): Promise<any[]> {
+    const response = await api.get<ApiResponse<any[]>>(`/anlagen/${id}/history`);
+    return response.data.data;
+  },
 };
+
+export default anlageService;

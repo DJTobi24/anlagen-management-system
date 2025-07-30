@@ -7,6 +7,7 @@ import Layout from './components/Layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Anlagen from './pages/Anlagen';
 import AnlageDetail from './pages/AnlageDetail';
+import AnlageEdit from './pages/AnlageEdit';
 import Import from './pages/Import';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
@@ -17,6 +18,8 @@ import Liegenschaften from './pages/Liegenschaften';
 import Objekte from './pages/Objekte';
 import Reports from './pages/Reports';
 import ImportReports from './pages/ImportReports';
+import DatenaufnahmeVerwaltung from './pages/DatenaufnahmeVerwaltung';
+import MeineDatenaufnahmen from './pages/MeineDatenaufnahmen';
 
 // ProtectedRoute component for future use
 // const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -78,6 +81,13 @@ const AppRoutes: React.FC = () => {
         <ProtectedRoute>
           <Layout>
             <AnlageDetail />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/anlagen/:id/edit" element={
+        <ProtectedRoute>
+          <Layout>
+            <AnlageEdit />
           </Layout>
         </ProtectedRoute>
       } />
@@ -148,6 +158,20 @@ const AppRoutes: React.FC = () => {
         <ProtectedRoute>
           <Layout>
             <ImportReports />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/datenaufnahme" element={
+        <ProtectedRoute>
+          <Layout>
+            <DatenaufnahmeVerwaltung />
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/meine-datenaufnahmen" element={
+        <ProtectedRoute>
+          <Layout>
+            <MeineDatenaufnahmen />
           </Layout>
         </ProtectedRoute>
       } />

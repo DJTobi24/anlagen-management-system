@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    overscroll-behavior: contain;
+  }
+  
+  /* Prevent pull-to-refresh on mobile */
+  html, body {
+    position: fixed;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+  }
+  
+  #root {
+    @apply h-full overflow-auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@layer components {
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  .btn-primary {
+    @apply bg-primary-600 text-white px-4 py-2 rounded-lg font-medium;
+    @apply hover:bg-primary-700 active:bg-primary-800;
+    @apply transition-colors duration-200;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium;
+    @apply hover:bg-gray-200 active:bg-gray-300;
+    @apply transition-colors duration-200;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200;
+    @apply p-4;
+  }
+  
+  .input {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply disabled:bg-gray-50 disabled:text-gray-500;
+  }
+  
+  .status-indicator {
+    @apply w-2 h-2 rounded-full;
+    @apply animate-pulse;
+  }
+  
+  .offline-indicator {
+    @apply fixed top-0 left-0 right-0 bg-orange-500 text-white;
+    @apply px-4 py-2 text-sm font-medium text-center;
+    @apply z-50 animate-slide-down;
+  }
+  
+  .sync-indicator {
+    @apply fixed bottom-4 right-4 bg-primary-600 text-white;
+    @apply px-4 py-3 rounded-lg shadow-lg;
+    @apply flex items-center space-x-2;
+    @apply z-40 animate-slide-up;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .tap-highlight-transparent {
+    -webkit-tap-highlight-color: transparent;
+  }
+}

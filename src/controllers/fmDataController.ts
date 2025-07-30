@@ -109,12 +109,12 @@ export const getAksTreeForBuilding = async (req: AuthRequest, res: Response): Pr
           aks.sort_order,
           aks.maintenance_interval_months,
           CASE 
-            WHEN aks.code = ANY($3::varchar[]) THEN 
+            WHEN aks.code = ANY($2::varchar[]) THEN 
               (SELECT COUNT(*) FROM anlagen a WHERE a.aks_code = aks.code AND a.objekt_id = $1 AND a.is_active = true)
             ELSE 0
           END as direct_anlage_count
         FROM aks_codes aks
-        WHERE aks.code = ANY($3::varchar[])
+        WHERE aks.code = ANY($2::varchar[])
           AND aks.is_active = true
         
         UNION
@@ -153,7 +153,7 @@ export const getAksTreeForBuilding = async (req: AuthRequest, res: Response): Pr
       ORDER BY at.code
     `;
 
-    const result = await pool.query(aksTreeQuery, [buildingId, mandant_id, aksCodesWithAnlagen]);
+    const result = await pool.query(aksTreeQuery, [buildingId, aksCodesWithAnlagen]);
     
     // Build hierarchical structure
     const aksMap = new Map();

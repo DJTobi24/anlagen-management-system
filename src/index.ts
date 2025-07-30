@@ -17,6 +17,7 @@ import anlageRoutes from '@/routes/anlagen';
 import importRoutes from '@/routes/import';
 import aksRoutes from '@/routes/aks';
 import fmDataRoutes from '@/routes/fmData';
+import datenaufnahmeRoutes from '@/routes/datenaufnahme';
 import { errorHandler } from '@/middleware/errorHandler';
 import { notFound } from '@/middleware/notFound';
 import { ImportService } from '@/services/importService';
@@ -100,7 +101,9 @@ app.use(`${API_PREFIX}/${API_VERSION}/objekte`, objektRoutes);
 app.use(`${API_PREFIX}/${API_VERSION}/anlagen`, anlageRoutes);
 app.use(`${API_PREFIX}/${API_VERSION}/import`, importRoutes);
 app.use(`${API_PREFIX}/${API_VERSION}/aks`, aksRoutes);
+app.use(`${API_PREFIX}/${API_VERSION}/aks-codes`, aksRoutes);
 app.use(`${API_PREFIX}/${API_VERSION}/fm-data`, fmDataRoutes);
+app.use(`${API_PREFIX}/${API_VERSION}/datenaufnahme`, datenaufnahmeRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
