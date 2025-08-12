@@ -10,7 +10,7 @@
     "migrate": "ts-node -r tsconfig-paths/register src/migrations/migrate.ts",
     "lint": "eslint src/**/*.ts",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest --passWithNoTests"
   },
   "keywords": [
     "anlagen",

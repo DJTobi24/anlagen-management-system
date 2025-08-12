@@ -26,10 +26,10 @@ run_test() {
     
     if eval $test_command; then
         echo -e "${GREEN}✓ ${test_name} passed${NC}"
-        ((TESTS_PASSED++))
+        ((TESTS_PASSED+=1))
     else
         echo -e "${RED}✗ ${test_name} failed${NC}"
-        ((TESTS_FAILED++))
+        ((TESTS_FAILED+=1))
         # Don't exit on failure, continue with other tests
     fi
 }
