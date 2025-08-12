@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { de } from 'date-fns/locale/de';
+// Import the German locale from the CommonJS entry point so Jest can transpile it
+import { de } from 'date-fns/locale';
 import {
   ArrowDownTrayIcon,
   ExclamationTriangleIcon,

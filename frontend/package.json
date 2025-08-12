@@ -44,6 +44,9 @@
       "react-app/jest"
     ]
   },
+  "jest": {
+    "transformIgnorePatterns": ["node_modules/(?!(date-fns)/)"]
+  },
   "browserslist": {
     "production": [
       ">0.2%",
