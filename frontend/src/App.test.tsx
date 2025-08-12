@@ -1,15 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import App from './App';
-
-// Mock react-router-dom
-jest.mock('react-router-dom', () => ({
-  BrowserRouter: ({ children }: any) => <div>{children}</div>,
-  Routes: ({ children }: any) => <div>{children}</div>,
-  Route: () => <div>Route</div>,
-  Navigate: () => <div>Navigate</div>,
-  useAuth: () => ({ user: null, loading: false }),
-}));
 
 // Mock react-query
 jest.mock('react-query', () => ({
@@ -32,15 +24,25 @@ jest.mock('./contexts/AuthContext', () => ({
 
 describe('App Component', () => {
   test('renders without crashing', () => {
-    render(<App />);
+    render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>
+    );
     // When no user is authenticated, the app should show the login form
-    expect(screen.getByText('Anlagen-Management-System')).toBeInTheDocument();
+    expect(
+      screen.getAllByText('Anlagen-Management-System')[0]
+    ).toBeInTheDocument();
   });
-  
+
   test('renders login form when user is not authenticated', () => {
-    render(<App />);
-    expect(screen.getByPlaceholderText('E-Mail-Adresse')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Passwort')).toBeInTheDocument();
+    render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>
+    );
+    expect(screen.getByLabelText('E-Mail-Adresse')).toBeInTheDocument();
+    expect(screen.getByLabelText('Passwort')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Anmelden' })).toBeInTheDocument();
   });
 });

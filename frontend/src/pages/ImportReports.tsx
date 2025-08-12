@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
-import { de } from 'date-fns/locale/de';
 import {
   ArrowDownTrayIcon,
   ExclamationTriangleIcon,
@@ -41,6 +39,16 @@ interface ImportError {
   error: string;
   details?: any;
 }
+
+const formatDate = (dateString: string) =>
+  new Intl.DateTimeFormat('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(dateString));
 
 const ImportReports: React.FC = () => {
   const navigate = useNavigate();
@@ -201,7 +209,7 @@ const ImportReports: React.FC = () => {
                             {importJob.filename}
                           </div>
                           <div className="text-sm text-gray-500">
-                            {format(new Date(importJob.created_at), 'dd.MM.yyyy HH:mm', { locale: de })}
+                            {formatDate(importJob.created_at)}
                             {importJob.created_by_name && ` • ${importJob.created_by_name}`}
                           </div>
                         </div>
