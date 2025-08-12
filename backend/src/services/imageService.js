@@ -104,11 +104,20 @@ class ImageService {
       };
       
       // Original optimiert speichern
-      await image
-        .jpeg({ quality: 90, progressive: true })
-        .png({ quality: 90, compressionLevel: 6 })
-        .webp({ quality: 90 })
-        .toFile(results.original.path);
+      let originalPipeline = image.clone();
+      switch (metadata.format) {
+        case 'jpeg':
+        case 'jpg':
+          originalPipeline = originalPipeline.jpeg({ quality: 90, progressive: true });
+          break;
+        case 'png':
+          originalPipeline = originalPipeline.png({ quality: 90, compressionLevel: 6 });
+          break;
+        case 'webp':
+          originalPipeline = originalPipeline.webp({ quality: 90 });
+          break;
+      }
+      await originalPipeline.toFile(results.original.path);
       
       // Verschiedene Größen generieren
       if (options.generateSizes !== false) {
@@ -116,15 +125,23 @@ class ImageService {
           const sizeFilename = this.generateFilename(file.originalname, sizeKey);
           const sizePath = path.join(this.uploadDir, sizeFilename);
           
-          await image
-            .resize(dimensions.width, dimensions.height, {
-              fit: 'inside',
-              withoutEnlargement: true
-            })
-            .jpeg({ quality: 85 })
-            .png({ quality: 85 })
-            .webp({ quality: 85 })
-            .toFile(sizePath);
+          let resized = image.clone().resize(dimensions.width, dimensions.height, {
+            fit: 'inside',
+            withoutEnlargement: true
+          });
+          switch (metadata.format) {
+            case 'jpeg':
+            case 'jpg':
+              resized = resized.jpeg({ quality: 85 });
+              break;
+            case 'png':
+              resized = resized.png({ quality: 85, compressionLevel: 6 });
+              break;
+            case 'webp':
+              resized = resized.webp({ quality: 85 });
+              break;
+          }
+          await resized.toFile(sizePath);
           
           results[sizeKey] = {
             filename: sizeFilename,
@@ -140,7 +157,7 @@ class ImageService {
         const webpFilename = this.generateFilename(file.originalname, null, 'webp').replace(/\.[^.]+$/, '.webp');
         const webpPath = path.join(this.uploadDir, webpFilename);
         
-        await image
+        await image.clone()
           .webp({ quality: 80 })
           .toFile(webpPath);
         
