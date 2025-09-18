@@ -1,398 +1,457 @@
-# Anlagen-Management-System (AMS)
+# Anlagen Management System (AMS)
 
-[![CI Pipeline](https://github.com/DJTobi24/anlagen-management-system/actions/workflows/ci.yml/badge.svg)](https://github.com/DJTobi24/anlagen-management-system/actions/workflows/ci.yml)
-[![Deploy Pipeline](https://github.com/DJTobi24/anlagen-management-system/actions/workflows/deploy.yml/badge.svg)](https://github.com/DJTobi24/anlagen-management-system/actions/workflows/deploy.yml)
-[![Performance Tests](https://github.com/DJTobi24/anlagen-management-system/actions/workflows/performance-test.yml/badge.svg)](https://github.com/DJTobi24/anlagen-management-system/actions/workflows/performance-test.yml)
+<div align="center">
+  <h3>Enterprise Facility Management Platform with QR-Code Asset Tracking</h3>
+  <p>A comprehensive multi-tenant solution for managing facilities, assets, and maintenance workflows</p>
+  
+  [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org)
+  [![React](https://img.shields.io/badge/React-18-blue.svg)](https://reactjs.org)
+  [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org)
+  [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-blue.svg)](https://www.postgresql.org)
+  [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com)
+  [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
+</div>
 
-Ein professionelles Multi-Tenant-System zur Verwaltung technischer Anlagen mit QR-Code-basierter Erfassung und mobilem Zugriff.
+## Overview
 
-## 🚀 Features
+The Anlagen Management System (AMS) is a professional enterprise-grade facility management platform designed to streamline the management of facilities, assets, and maintenance operations. Built with modern technologies and best practices, AMS provides a scalable, secure, and user-friendly solution for organizations of all sizes.
 
-### Kernfunktionen
-- **Multi-Tenant-Architektur** - Vollständige Datenisolation zwischen Mandanten
-- **QR-Code-Erfassung** - Mobile Anlagenerfassung über Kamera oder manuelle Eingabe
-- **Role-Based Access Control** - Differenzierte Benutzerrollen (Admin, Techniker, Aufnehmer)
-- **Excel Import/Export** - Massenimport und -export von Anlagendaten
-- **PWA-Funktionalität** - Offline-fähige Progressive Web App
-- **Responsive Design** - Optimiert für Desktop, Tablet und Mobile
+### Key Features
 
-### Verwaltungsfunktionen
-- **Anlagenverwaltung** - CRUD-Operationen mit Filterung und Suche
-- **Benutzerverwaltung** - Benutzer- und Rollenverwaltung pro Mandant
-- **AKS-Verwaltung** - Anlagen-Kennzeichnungs-System mit Validierungsregeln
-- **Import-Center** - Live-Progress und Job-Historie für Excel-Imports
-- **Audit-Logging** - Vollständige Nachverfolgung aller Änderungen
+- **🏢 Multi-Tenant Architecture** - Secure data isolation between organizations with tenant-specific configurations
+- **📱 QR Code Asset Tracking** - Quick identification and tracking of assets with mobile scanning
+- **📴 Offline-Capable PWA** - Continue working without internet connectivity with automatic synchronization
+- **🔐 Role-Based Access Control** - Granular permission management (Admin, Techniker, Aufnehmer)
+- **📊 Excel Import/Export** - Bulk data operations with customizable Excel templates
+- **🔄 Real-time Synchronization** - Automatic data sync across all devices
+- **📚 Comprehensive API** - RESTful API with complete Swagger/OpenAPI documentation
+- **📱 Mobile-First Design** - Responsive UI optimized for tablets and smartphones
+- **🔍 Advanced Search & Filtering** - AKS-based categorization and powerful search capabilities
+- **📈 Audit Trail** - Complete tracking of all changes with user attribution
+- **🎯 Field Customization** - Dynamic field definitions per AKS code
+- **🔒 Multi-Factor Authentication** - Enhanced security with MFA support
 
-### Technische Features
-- **Offline-First** - IndexedDB mit Sync-Queue für Offline-Betrieb
-- **Real-time Updates** - Live-Status-Updates und Benachrichtigungen
-- **Bulk Operations** - Massenbearbeitung von Anlagen
-- **Data Export** - Flexible Export-Optionen (Excel, CSV, PDF)
-- **API-First** - RESTful API mit OpenAPI-Dokumentation
-
-## 🛠 Technologie-Stack
+## Tech Stack
 
 ### Backend
-- **Node.js** + **Express.js** - Server Framework
-- **PostgreSQL** - Relationale Datenbank
-- **Sequelize ORM** - Database Abstraction Layer
-- **JWT Authentication** - Token-basierte Authentifizierung
-- **Multer** - Datei-Upload-Middleware
-- **XLSX** - Excel-Verarbeitung
-- **Jest** - Testing Framework
+- **Node.js 18+** with Express.js and TypeScript
+- **PostgreSQL 14+** database with multi-tenant support
+- **Redis** for caching and session management
+- **JWT** authentication with refresh tokens
+- **Bull** queue for background job processing
+- **ExcelJS** for Excel operations
+- **Bcrypt** for password hashing
 
 ### Frontend
-- **React 18** - UI-Framework
-- **TypeScript** - Type-Safe JavaScript
-- **Tailwind CSS** - Utility-First CSS Framework
-- **Zustand** - State Management
-- **React Router v6** - Client-Side Routing
-- **React Query** - Server State Management
-- **Recharts** - Datenvisualisierung
-- **React QR Reader** - QR-Code-Scanning
+- **React 18** with TypeScript
+- **Tailwind CSS** for modern, responsive design
+- **React Router v6** for navigation
+- **Axios** for API communication
+- **React Query** for server state management
 
-### DevOps & Tools
-- **Docker** - Containerisierung
-- **Docker Compose** - Multi-Container-Orchestrierung
-- **ESLint** + **Prettier** - Code Quality
-- **Husky** - Git Hooks
-- **GitHub Actions** - CI/CD Pipeline
+### PWA Mobile App
+- **Progressive Web App** with offline capabilities
+- **IndexedDB** with Dexie for local storage
+- **Service Worker** for caching and background sync
+- **QR Code Scanner** with jsQR library
+- **Photo Upload** with compression and offline storage
 
-## 📋 Voraussetzungen
+### DevOps
+- **Docker** containerization
+- **Docker Compose** for orchestration
+- **GitHub Actions** for CI/CD
+- **Nginx** for static file serving and reverse proxy
 
-### System-Anforderungen
-- **Node.js** >= 18.0.0
-- **npm** >= 8.0.0
-- **PostgreSQL** >= 14.0
-- **Docker** >= 20.10 (optional)
-- **Docker Compose** >= 2.0 (optional)
+## Quick Start
 
-### Browser-Unterstützung
-- Chrome >= 90
-- Firefox >= 88
-- Safari >= 14
-- Edge >= 90
+### Prerequisites
 
-## 🚀 Installation
+- Node.js 18+ and npm 8+
+- PostgreSQL 14+
+- Redis 6+ (optional, falls back to in-memory)
+- Docker and Docker Compose (for containerized deployment)
 
-### Option 1: Mit Docker (Empfohlen)
+### Installation with Docker (Recommended)
 
-1. **Repository klonen**
+1. **Clone the repository**
 ```bash
-git clone https://github.com/your-org/anlagen-management-system.git
+git clone https://github.com/DJTobi24/anlagen-management-system.git
 cd anlagen-management-system
 ```
 
-2. **Environment-Dateien erstellen**
+2. **Set up environment variables**
 ```bash
-# Backend Environment
-cp backend/.env.example backend/.env
-# Frontend Environment  
-cp frontend/.env.example frontend/.env
+cp .env.example .env
+# Edit .env with your configuration
 ```
 
-3. **Docker Container starten**
+3. **Start services with Docker Compose**
 ```bash
 docker-compose up -d
 ```
 
-4. **Datenbank initialisieren**
+4. **Access the applications**
+- Frontend: http://localhost
+- Backend API: http://localhost:3000
+- API Documentation: http://localhost:3000/api-docs
+- PWA App: http://localhost:3001
+
+### Local Development Setup
+
+1. **Clone and configure**
 ```bash
-docker-compose exec backend npm run db:migrate
-docker-compose exec backend npm run db:seed
-```
-
-5. **Anwendung öffnen**
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5000
-- API-Dokumentation: http://localhost:5000/api-docs
-
-### Option 2: Lokale Installation
-
-1. **Repository klonen**
-```bash
-git clone https://github.com/your-org/anlagen-management-system.git
+git clone https://github.com/DJTobi24/anlagen-management-system.git
 cd anlagen-management-system
-```
-
-2. **PostgreSQL einrichten**
-```bash
-# PostgreSQL installieren (Ubuntu/Debian)
-sudo apt-get install postgresql postgresql-contrib
-
-# Datenbank und Benutzer erstellen
-sudo -u postgres psql
-CREATE DATABASE anlagen_management;
-CREATE USER ams_user WITH PASSWORD 'your_password';
-GRANT ALL PRIVILEGES ON DATABASE anlagen_management TO ams_user;
-\q
-```
-
-3. **Backend konfigurieren**
-```bash
-cd backend
 cp .env.example .env
-# .env-Datei mit Datenbankdaten bearbeiten
+```
+
+2. **Install dependencies**
+```bash
+# Backend
 npm install
-npm run db:migrate
-npm run db:seed
+
+# Frontend
+cd frontend && npm install
+
+# PWA App
+cd ../pwa-app && npm install
+```
+
+3. **Set up PostgreSQL**
+```bash
+# Create database
+createdb anlagen_management
+
+# Run migrations
+npm run migrate
+```
+
+4. **Start development servers**
+```bash
+# Backend (port 3000)
 npm run dev
+
+# In new terminal - Frontend (port 3002)
+cd frontend && npm start
+
+# In new terminal - PWA App (port 3001)
+cd pwa-app && npm start
 ```
 
-4. **Frontend konfigurieren**
-```bash
-cd frontend
-cp .env.example .env
-# .env-Datei mit Backend-URL bearbeiten
-npm install
-npm start
+## Project Structure
+
+```
+anlagen-management-system/
+├── src/                    # Backend source code
+│   ├── controllers/        # Request handlers
+│   ├── services/          # Business logic layer
+│   ├── routes/            # API endpoint definitions
+│   ├── middleware/        # Express middleware
+│   ├── migrations/        # Database migrations
+│   └── config/            # Configuration files
+├── frontend/              # React frontend application
+│   ├── src/
+│   │   ├── components/    # Reusable components
+│   │   ├── pages/        # Page components
+│   │   ├── services/     # API client services
+│   │   └── contexts/     # React contexts
+│   └── public/           # Static assets
+├── pwa-app/              # Progressive Web App
+│   ├── src/
+│   │   ├── pages/        # PWA pages
+│   │   ├── components/   # PWA components
+│   │   ├── db/          # IndexedDB layer
+│   │   └── utils/       # Utilities
+│   └── public/          # PWA assets
+├── docker/              # Docker configurations
+├── scripts/             # Utility scripts
+├── templates/           # Excel templates
+└── docs/               # Documentation
 ```
 
-## ⚙️ Konfiguration
+## Environment Configuration
 
-### Backend-Konfiguration (.env)
+### Required Environment Variables
 
 ```bash
-# Server
+# Server Configuration
 NODE_ENV=development
-PORT=5000
-HOST=localhost
+PORT=3000
+API_VERSION=v1
+API_PREFIX=/api
 
-# Datenbank
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=anlagen_management
-DB_USER=ams_user
-DB_PASSWORD=your_password
+# Database
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/anlagen_management
 
-# JWT
-JWT_SECRET=your-super-secret-jwt-key
-JWT_EXPIRES_IN=24h
-
-# File Upload
-UPLOAD_MAX_SIZE=10mb
-UPLOAD_ALLOWED_TYPES=image/jpeg,image/png,application/pdf
-
-# Email (optional)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-
-# Redis (optional - für Caching)
+# Redis (optional)
 REDIS_URL=redis://localhost:6379
 
-# Logging
-LOG_LEVEL=info
-LOG_FILE=logs/app.log
+# Authentication
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+JWT_REFRESH_SECRET=your-super-secret-refresh-key-change-in-production
+JWT_EXPIRES_IN=1h
+JWT_REFRESH_EXPIRES_IN=7d
+
+# File Upload
+UPLOAD_MAX_SIZE=10485760
+UPLOAD_PATH=./uploads
 ```
 
-### Frontend-Konfiguration (.env)
+## API Documentation
 
+The API is fully documented with Swagger/OpenAPI. Access the interactive documentation at:
+
+- Development: `http://localhost:3000/api-docs`
+- Production: `https://your-domain.com/api-docs`
+
+### Main API Endpoints
+
+#### Authentication
+- `POST /api/v1/auth/login` - User authentication
+- `POST /api/v1/auth/register` - User registration
+- `POST /api/v1/auth/refresh` - Refresh access token
+- `POST /api/v1/auth/logout` - Logout user
+
+#### Assets (Anlagen)
+- `GET /api/v1/anlagen` - List assets with filtering
+- `POST /api/v1/anlagen` - Create new asset
+- `GET /api/v1/anlagen/:id` - Get asset details
+- `PUT /api/v1/anlagen/:id` - Update asset
+- `DELETE /api/v1/anlagen/:id` - Delete asset
+- `GET /api/v1/anlagen/:id/qr` - Generate QR code
+
+#### Import/Export
+- `POST /api/v1/import/excel` - Import Excel data
+- `GET /api/v1/export/excel` - Export to Excel
+- `GET /api/v1/import/template` - Download import template
+- `GET /api/v1/import/jobs/:id` - Check import job status
+
+#### Data Collection
+- `GET /api/v1/datenaufnahme` - List data collection tasks
+- `POST /api/v1/datenaufnahme` - Create collection task
+- `PUT /api/v1/datenaufnahme/:id` - Update collection data
+- `POST /api/v1/datenaufnahme/:id/upload` - Upload photos
+
+## Development Commands
+
+### Backend
 ```bash
-# API
-REACT_APP_API_URL=http://localhost:5000/api
-REACT_APP_API_TIMEOUT=30000
+npm run dev          # Start development server with hot reload
+npm run build        # Build TypeScript
+npm run start        # Start production server
+npm run migrate      # Run database migrations
+npm run lint         # Run ESLint
+npm run typecheck    # Run TypeScript type checking
+npm test            # Run tests
+```
 
-# App
-REACT_APP_NAME=Anlagen-Management-System
-REACT_APP_VERSION=1.0.0
+### Frontend
+```bash
+npm start           # Start development server
+npm run build       # Build for production
+npm test           # Run tests
+npm run lint        # Run linting
+npm run lint:fix    # Fix linting issues
+```
+
+### PWA App
+```bash
+npm start           # Start development server
+npm run build       # Build with service worker
+npm test           # Run tests
+```
+
+### Docker Operations
+```bash
+docker-compose up -d        # Start all services
+docker-compose logs -f      # View logs
+docker-compose down         # Stop all services
+./quick-rebuild.sh         # Quick rebuild backend
+```
+
+## Features in Detail
+
+### 🏢 Multi-Tenant Architecture
+- Complete data isolation between tenants
+- Tenant-specific configurations and branding
+- Shared infrastructure with logical separation
+- Scalable to thousands of tenants
+
+### 📱 QR Code System
+- Automatic QR code generation for every asset
+- Mobile scanner with camera integration
+- Fallback manual entry for code input
+- Bulk QR code printing support
+- Custom QR code formats per tenant
+
+### 📴 Offline Capabilities
+- Local data storage with IndexedDB
+- Intelligent sync queue management
+- Automatic conflict resolution
+- Background synchronization
+- Offline-first architecture
+
+### 📊 Import/Export System
+- Customizable Excel templates
+- Bulk data import with validation
+- Real-time progress tracking
+- Comprehensive error reporting
+- Background processing for large files
+- Import history and rollback capability
+
+### 🔐 Security Features
+- JWT authentication with secure refresh tokens
+- Role-based access control (RBAC)
+- Password policies and bcrypt hashing
+- HTTPS enforcement
+- SQL injection prevention
+- XSS and CSRF protection
+- Rate limiting and DDoS protection
+- Security headers (HSTS, CSP, etc.)
+
+### 🎯 AKS Field System
+- Dynamic field definitions per AKS code
+- Custom validation rules
+- Conditional field visibility
+- Multi-language support
+- Template-based field groups
+
+## Testing
+
+### Backend Tests
+```bash
+npm test                    # Run all tests
+npm run test:watch         # Watch mode
+npm run test:coverage      # Coverage report
+```
+
+### Frontend Tests
+```bash
+cd frontend
+npm test                   # Run tests
+npm run test:coverage      # Coverage report
+```
+
+### E2E Tests
+```bash
+npm run test:e2e          # Run E2E tests
+```
+
+## Deployment
+
+### Production Build
+```bash
+# Backend
+npm run build
+
+# Frontend
+cd frontend && npm run build
 
 # PWA
-REACT_APP_PWA_ENABLED=true
-REACT_APP_OFFLINE_ENABLED=true
-
-# QR-Scanner
-REACT_APP_QR_ENABLED=true
-REACT_APP_CAMERA_FACING_MODE=environment
-
-# Features
-REACT_APP_EXCEL_IMPORT_ENABLED=true
-REACT_APP_BULK_OPERATIONS_ENABLED=true
-REACT_APP_AUDIT_LOG_ENABLED=true
+cd pwa-app && npm run build
 ```
 
-## 🔧 Entwicklung
-
-### Backend-Entwicklung
-
+### Docker Production Deployment
 ```bash
-cd backend
-
-# Entwicklungsserver starten
-npm run dev
-
-# Tests ausführen
-npm test
-npm run test:watch
-npm run test:coverage
-
-# Datenbank-Migrationen
-npm run db:migrate
-npm run db:migrate:undo
-npm run db:seed
-npm run db:reset
-
-# Code-Qualität
-npm run lint
-npm run lint:fix
-npm run format
-
-# Build für Produktion
-npm run build
-npm start
+docker-compose -f docker-compose.prod.yml up -d
 ```
 
-### Frontend-Entwicklung
+### Performance Optimization
+- Database indexing on frequently queried columns
+- Redis caching for session and frequently accessed data
+- Image optimization and lazy loading
+- Code splitting and tree shaking
+- Service worker caching strategies
+- CDN integration for static assets
 
+## Troubleshooting
+
+### Common Issues
+
+**Database Connection Failed**
 ```bash
-cd frontend
-
-# Entwicklungsserver starten
-npm start
-
-# Tests ausführen
-npm test
-npm run test:coverage
-npm run test:ci
-
-# Code-Qualität
-npm run lint
-npm run lint:fix
-npm run format
-
-# Build für Produktion
-npm run build
-npm run serve
+# Check PostgreSQL service
+sudo systemctl status postgresql
+# Check connection string in .env
 ```
 
-## 🧪 Testing
-
-### Backend-Tests
-
+**Redis Connection Failed**
 ```bash
-cd backend
-
-# Alle Tests ausführen
-npm test
-
-# Tests mit Coverage
-npm run test:coverage
-
-# Spezifische Test-Suite
-npm test -- auth.test.js
-npm test -- --grep "Authentication"
-
-# Integration Tests
-npm run test:integration
-
-# E2E Tests
-npm run test:e2e
+# System will fall back to in-memory cache
+# To fix: ensure Redis is running
+redis-cli ping
 ```
 
-### Frontend-Tests
-
+**Port Already in Use**
 ```bash
-cd frontend
-
-# Unit Tests
-npm test
-
-# Integration Tests
-npm run test:integration
-
-# E2E Tests mit Cypress
-npm run cypress:open
-npm run cypress:run
-
-# Visual Regression Tests
-npm run test:visual
+# Change port in .env or kill process
+lsof -i :3000
+kill -9 <PID>
 ```
 
-## 📚 API-Dokumentation
-
-### OpenAPI/Swagger
-- **Live-Dokumentation**: http://localhost:5000/api-docs
-- **Swagger-Datei**: `/backend/docs/swagger.yaml`
-- **Postman-Collection**: `/docs/postman/`
-
-### Wichtige API-Endpunkte
-
+**Migration Failed**
 ```bash
-# Authentication
-POST /api/auth/login
-POST /api/auth/register  
-POST /api/auth/refresh
-POST /api/auth/logout
-
-# Anlagen
-GET    /api/anlagen
-POST   /api/anlagen
-GET    /api/anlagen/:id
-PUT    /api/anlagen/:id
-DELETE /api/anlagen/:id
-
-# Import/Export
-POST /api/import/excel
-GET  /api/export/excel
-GET  /api/import/jobs
-GET  /api/import/jobs/:id/status
-
-# Admin
-GET    /api/admin/users
-POST   /api/admin/users
-GET    /api/admin/mandanten
-POST   /api/admin/aks-codes
+# Reset database and re-run migrations
+npm run migrate:reset
+npm run migrate
 ```
 
-## 🐛 Troubleshooting
+## Contributing
 
-### Häufige Probleme
+We welcome contributions! Please follow these guidelines:
 
-**Problem**: Datenbankverbindung fehlgeschlagen
-```bash
-# Lösung: Überprüfe Datenbankstatus
-sudo service postgresql status
-sudo service postgresql start
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Run tests (`npm test`)
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
-# Verbindung testen
-psql -h localhost -U ams_user -d anlagen_management
-```
+### Development Guidelines
+- Follow TypeScript best practices
+- Write unit tests for new features
+- Update API documentation
+- Follow conventional commits
+- Ensure all tests pass
+- Update README if needed
 
-**Problem**: Frontend kann Backend nicht erreichen
-```bash
-# Lösung: CORS-Konfiguration prüfen
-# backend/src/config/cors.js
-const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
-};
-```
+## Documentation
 
-**Problem**: QR-Scanner funktioniert nicht
-```bash
-# Lösung: HTTPS für Kamera-Zugriff erforderlich
-# Entwicklung mit HTTPS starten
-HTTPS=true npm start
-```
+- [API Documentation](./API_COMPLETE_DOCUMENTATION.md) - Complete API reference
+- [Installation Guide](./INSTALLATION.md) - Detailed installation instructions
+- [System Overview](./SYSTEM_OVERVIEW.md) - Architecture and design
+- [AKS Documentation](./AKS_DOCUMENTATION.md) - AKS system guide
+- [Import Documentation](./IMPORT_DOCUMENTATION.md) - Import/Export guide
+- [CI/CD Guide](./CI_PIPELINE_GUIDE.md) - CI/CD pipeline setup
+- [Troubleshooting](./TROUBLESHOOTING.md) - Common issues and solutions
+- [Development Guide](./CLAUDE.md) - Development instructions
 
-**Problem**: Excel-Import schlägt fehl
-```bash
-# Lösung: Speicher für große Dateien erhöhen
-NODE_OPTIONS="--max-old-space-size=4096" npm start
-```
+## Support
 
-## 📞 Support
+For support and questions:
+- 📧 Create an issue on [GitHub Issues](https://github.com/DJTobi24/anlagen-management-system/issues)
+- 📚 Check the [documentation](./docs)
+- 🔍 Review API docs at `/api-docs`
+- 💬 Join discussions on [GitHub Discussions](https://github.com/DJTobi24/anlagen-management-system/discussions)
 
-- **Issues**: [GitHub Issues](https://github.com/your-org/anlagen-management-system/issues)
-- **Diskussionen**: [GitHub Discussions](https://github.com/your-org/anlagen-management-system/discussions)
-- **Email**: support@your-domain.com
-- **Dokumentation**: [Wiki](https://github.com/your-org/anlagen-management-system/wiki)
+## License
 
-## 📄 Lizenz
+This project is proprietary software. All rights reserved.
 
-Dieses Projekt ist unter der MIT-Lizenz lizenziert - siehe [LICENSE](LICENSE) für Details.
+## Acknowledgments
+
+Built with excellent open-source technologies:
+- Node.js and Express.js
+- React and TypeScript
+- PostgreSQL and Redis
+- Docker and Kubernetes
+- Tailwind CSS
+- And many other outstanding open-source projects
 
 ---
 
-**Gebaut mit ❤️ für effizientes Anlagenmanagement**# Test Docker Hub credentials
+<div align="center">
+  <p>Made with ❤️ for Enterprise Facility Management</p>
+  <p>© 2024 Anlagen Management System. All rights reserved.</p>
+</div>
