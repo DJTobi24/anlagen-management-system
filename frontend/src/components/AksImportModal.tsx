@@ -13,15 +13,26 @@ interface AksImportModalProps {
 const AksImportModal: React.FC<AksImportModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [file, setFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [importWithFields, setImportWithFields] = useState(true);
 
   const importMutation = useMutation(
-    (file: File) => aksService.importAksFromExcel(file),
+    (file: File) => {
+      if (importWithFields) {
+        return aksService.importWithFields(file);
+      } else {
+        return aksService.importFromExcel(file);
+      }
+    },
     {
-      onSuccess: (result) => {
-        const { success, failed, errors } = result.data;
+      onSuccess: (result: any) => {
+        const { success, failed, errors, importedFields } = result;
         
         if (failed === 0) {
-          toast.success(`${success} AKS-Codes erfolgreich importiert!`);
+          if (importWithFields && importedFields !== undefined) {
+            toast.success(`${success} AKS-Codes und ${importedFields} Felder erfolgreich importiert!`);
+          } else {
+            toast.success(`${success} AKS-Codes erfolgreich importiert!`);
+          }
         } else {
           toast.error(`Import abgeschlossen: ${success} erfolgreich, ${failed} fehlgeschlagen`);
         }
@@ -37,13 +48,19 @@ const AksImportModal: React.FC<AksImportModalProps> = ({ isOpen, onClose, onSucc
   );
 
   const downloadTemplateMutation = useMutation(
-    () => aksService.downloadAksImportTemplate(),
+    () => {
+      if (importWithFields) {
+        return aksService.downloadImportTemplateWithFields();
+      } else {
+        return aksService.downloadImportTemplate();
+      }
+    },
     {
       onSuccess: (blob) => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'aks_import_template.xlsx';
+        a.download = importWithFields ? 'aks_import_template_with_fields.xlsx' : 'aks_import_template.xlsx';
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -122,14 +139,26 @@ const AksImportModal: React.FC<AksImportModalProps> = ({ isOpen, onClose, onSucc
             </div>
 
             <div className="mb-4">
-              <button
-                onClick={() => downloadTemplateMutation.mutate()}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                disabled={downloadTemplateMutation.isLoading}
-              >
-                <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
-                Vorlage herunterladen
-              </button>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => downloadTemplateMutation.mutate()}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  disabled={downloadTemplateMutation.isLoading}
+                >
+                  <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
+                  Vorlage herunterladen
+                </button>
+                
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={importWithFields}
+                    onChange={(e) => setImportWithFields(e.target.checked)}
+                    className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <span className="text-sm text-gray-700">Mit Felddefinitionen importieren</span>
+                </label>
+              </div>
             </div>
 
             <div
@@ -178,14 +207,31 @@ const AksImportModal: React.FC<AksImportModalProps> = ({ isOpen, onClose, onSucc
               <div className="flex">
                 <div className="ml-3">
                   <p className="text-sm text-yellow-700">
-                    <strong>Hinweis:</strong> Die Excel-Datei sollte folgende Spalten enthalten:
+                    <strong>Hinweis:</strong> {importWithFields ? 'Die Excel-Datei kann mehrere Blätter enthalten:' : 'Die Excel-Datei sollte folgende Spalten enthalten:'}
                   </p>
-                  <ul className="mt-2 text-sm text-yellow-700 list-disc list-inside">
-                    <li>AKS-Code (z.B. AKS.01.001.01)</li>
-                    <li>Name</li>
-                    <li>Beschreibung (optional)</li>
-                    <li>Wartungsintervall in Monaten (optional)</li>
-                  </ul>
+                  {importWithFields ? (
+                    <div className="mt-2 text-sm text-yellow-700">
+                      <p className="font-medium">Blatt 1 - AKS-Codes:</p>
+                      <ul className="list-disc list-inside ml-2">
+                        <li>AKS-Code (z.B. 480.010)</li>
+                        <li>Bezeichnung</li>
+                        <li>Beschreibung (optional)</li>
+                      </ul>
+                      <p className="font-medium mt-2">Blatt 2 - Felder (optional):</p>
+                      <ul className="list-disc list-inside ml-2">
+                        <li>AKS-Code</li>
+                        <li>Feldname, Bezeichnung, Feldtyp</li>
+                        <li>Pflichtfeld, Einheit, etc.</li>
+                      </ul>
+                    </div>
+                  ) : (
+                    <ul className="mt-2 text-sm text-yellow-700 list-disc list-inside">
+                      <li>AKS-Code (z.B. AKS.01.001.01)</li>
+                      <li>Name</li>
+                      <li>Beschreibung (optional)</li>
+                      <li>Wartungsintervall in Monaten (optional)</li>
+                    </ul>
+                  )}
                 </div>
               </div>
             </div>

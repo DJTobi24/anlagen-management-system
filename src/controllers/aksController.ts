@@ -2,13 +2,11 @@ import { Response, NextFunction } from 'express';
 import multer from 'multer';
 import Joi from 'joi';
 import { AksService } from '@/services/aksService';
-import { AksImportService } from '@/services/aksImportService';
+import aksImportService from '@/services/aksImportService';
 import { AksExcelImportService } from '@/services/aksExcelImportService';
 import { AuthRequest } from '@/types';
 import { AksFieldType, AksDataType } from '@/types/aks';
 import { createError } from '@/middleware/errorHandler';
-import path from 'path';
-import fs from 'fs';
 
 // Configure multer for AKS Excel upload
 const storage = multer.memoryStorage();
@@ -396,29 +394,16 @@ export class AksController {
         throw createError('No Excel file uploaded', 400);
       }
 
-      // Save file temporarily
-      const fileName = `aks_import_${Date.now()}.xlsx`;
-      const filePath = path.join(process.cwd(), 'uploads', fileName);
-      
-      if (!fs.existsSync(path.dirname(filePath))) {
-        fs.mkdirSync(path.dirname(filePath), { recursive: true });
-      }
-      
-      fs.writeFileSync(filePath, req.file.buffer);
+      const result = await aksImportService.importAksWithFields(
+        req.file.buffer, 
+        req.mandantId!, 
+        req.user?.id!
+      );
 
-      try {
-        const result = await AksImportService.importAksFromExcel(filePath);
-
-        res.json({
-          message: 'AKS import completed',
-          data: result
-        });
-      } finally {
-        // Clean up file
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      }
+      res.json({
+        message: 'AKS import completed',
+        data: result
+      });
     } catch (error) {
       next(error);
     }
@@ -427,7 +412,7 @@ export class AksController {
   // Download AKS import template
   static async downloadImportTemplate(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const templateBuffer = await AksImportService.generateImportTemplate();
+      const templateBuffer = await aksImportService.generateAksImportTemplate();
 
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', 'attachment; filename="aks_import_template.xlsx"');
@@ -446,7 +431,8 @@ export class AksController {
         throw createError('No errors to report', 400);
       }
 
-      const reportBuffer = await AksImportService.generateAksErrorReport(errors);
+      // TODO: Implement error report generation
+      const reportBuffer = Buffer.from('Error report not yet implemented');
 
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', 'attachment; filename="aks_import_errors.xlsx"');

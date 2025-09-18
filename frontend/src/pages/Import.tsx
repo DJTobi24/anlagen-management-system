@@ -143,14 +143,41 @@ const Import: React.FC = () => {
             Importieren Sie Anlagen-Daten aus Excel-Dateien
           </p>
         </div>
-        <div className="mt-4 flex md:mt-0 md:ml-4">
+        <div className="mt-4 flex md:mt-0 md:ml-4 space-x-2">
           <button
             onClick={() => downloadTemplateMutation.mutate()}
             disabled={downloadTemplateMutation.isLoading}
-            className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 mr-4"
+            className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
           >
             <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
-            Template herunterladen
+            Basis-Template
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                const response = await fetch('/api/v1/import/template/aks-fields', {
+                  headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+                  }
+                });
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Anlagen_Import_Template_AKS_Fields.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                toast.success('AKS-Template heruntergeladen');
+              } catch (error) {
+                toast.error('Download fehlgeschlagen');
+              }
+            }}
+            className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+          >
+            <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+            AKS-Template
           </button>
         </div>
       </div>

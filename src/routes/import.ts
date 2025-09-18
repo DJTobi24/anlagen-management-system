@@ -25,6 +25,9 @@ router.get('/sample/excel', async (req, res, next) => {
   }
 });
 
+// Download Excel template with AKS-specific fields
+router.get('/template/aks-fields', ImportController.downloadTemplateWithFields);
+
 // Routes that require mandant access
 router.use(mandantAccess);
 

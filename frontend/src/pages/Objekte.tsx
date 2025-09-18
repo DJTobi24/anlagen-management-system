@@ -13,10 +13,7 @@ import {
 import { api } from '../services/api';
 import CreateObjektModal from '../components/CreateObjektModal';
 import EditObjektModal from '../components/EditObjektModal';
-import { Heading, Subheading } from '../components/ui/heading';
-import { Text } from '../components/ui/text';
-import { Button } from '../components/ui/button';
-import { Dialog, DialogBody, DialogActions } from '../components/ui/dialog';
+// UI components removed - using standard HTML elements
 
 interface Objekt {
   id: string;
@@ -110,7 +107,7 @@ const Objekte: React.FC = () => {
   if (error) {
     return (
       <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
-        <Text className="text-red-600 dark:text-red-500">Fehler beim Laden der Objekte</Text>
+        <p className="text-red-600 dark:text-red-500">Fehler beim Laden der Objekte</p>
       </div>
     );
   }
@@ -121,25 +118,27 @@ const Objekte: React.FC = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           {liegenschaftId && (
-            <Button
+            <button
               onClick={() => navigate('/liegenschaften')}
-              plain
-              className="text-zinc-400 hover:text-zinc-500 dark:text-zinc-500 dark:hover:text-zinc-400"
+              className="inline-flex items-center p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded-md"
             >
-              <ArrowLeftIcon className="size-5" />
-            </Button>
+              <ArrowLeftIcon className="h-5 w-5" />
+            </button>
           )}
           <div>
-            <Heading>
+            <h1 className="text-2xl font-bold text-gray-900">
               {liegenschaftId ? `Objekte in ${liegenschaft?.name}` : 'Alle Objekte'}
-            </Heading>
-            <Text className="mt-2">Verwalten Sie Ihre Gebäude und deren Anlagen</Text>
+            </h1>
+            <p className="mt-2 text-sm text-gray-600">Verwalten Sie Ihre Gebäude und deren Anlagen</p>
           </div>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} color="indigo">
-          <PlusIcon className="size-4" data-slot="icon" />
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          <PlusIcon className="h-5 w-5 mr-2" />
           Neues Objekt
-        </Button>
+        </button>
       </div>
 
       {/* Objekte Grid */}
@@ -157,50 +156,48 @@ const Objekte: React.FC = () => {
                   </div>
                 </div>
                 <div className="ml-5 w-0 flex-1">
-                  <Subheading level={3} className="truncate">
+                  <h3 className="text-base font-medium text-gray-900 truncate">
                     {objekt.name}
-                  </Subheading>
+                  </h3>
                   {(objekt.floor || objekt.room) && (
-                    <Text className="mt-1 truncate">
+                    <p className="mt-1 text-sm text-gray-500 truncate">
                       {objekt.floor && `Etage: ${objekt.floor}`}
                       {objekt.floor && objekt.room && ', '}
                       {objekt.room && `Raum: ${objekt.room}`}
-                    </Text>
+                    </p>
                   )}
                 </div>
               </div>
               
               {objekt.description && (
-                <Text className="mt-3">
+                <p className="mt-3 text-sm text-gray-600">
                   {objekt.description}
-                </Text>
+                </p>
               )}
 
               <div className="mt-4 flex items-center">
                 <WrenchScrewdriverIcon className="mr-1.5 size-5 text-zinc-400 dark:text-zinc-500" />
-                <Text className="text-sm">{objekt.anlagen_count} Anlagen</Text>
+                <span className="text-sm text-gray-600">{objekt.anlagen_count} Anlagen</span>
               </div>
             </div>
 
             <div className="border-t border-zinc-950/5 bg-zinc-50 px-6 py-3 dark:border-white/5 dark:bg-zinc-800/50">
               <div className="flex items-center justify-between">
-                <Button
+                <button
                   onClick={() => setEditingObjekt(objekt)}
-                  plain
-                  className="text-sm"
+                  className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
                 >
-                  <PencilIcon className="size-4" data-slot="icon" />
+                  <PencilIcon className="h-4 w-4 mr-1" />
                   Bearbeiten
-                </Button>
-                <Button
+                </button>
+                <button
                   onClick={() => handleDelete(objekt)}
-                  plain
-                  className="text-sm text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400"
+                  className="inline-flex items-center text-sm text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={objekt.anlagen_count > 0}
                 >
-                  <TrashIcon className="size-4" data-slot="icon" />
+                  <TrashIcon className="h-4 w-4 mr-1" />
                   Löschen
-                </Button>
+                </button>
               </div>
             </div>
           </div>
@@ -211,17 +208,20 @@ const Objekte: React.FC = () => {
       {objekte.length === 0 && (
         <div className="text-center py-12">
           <BuildingOfficeIcon className="mx-auto size-12 text-zinc-400 dark:text-zinc-500" />
-          <Subheading level={3} className="mt-2">
+          <h3 className="mt-2 text-lg font-medium text-gray-900">
             Keine Objekte
-          </Subheading>
-          <Text className="mt-1">
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">
             Erstellen Sie Ihr erstes Objekt, um zu beginnen.
-          </Text>
+          </p>
           <div className="mt-6">
-            <Button onClick={() => setShowCreateModal(true)} color="indigo">
-              <PlusIcon className="size-4" data-slot="icon" />
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
               Neues Objekt
-            </Button>
+            </button>
           </div>
         </div>
       )}
@@ -251,8 +251,13 @@ const Objekte: React.FC = () => {
       )}
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deletingObjekt} onClose={() => setDeletingObjekt(null)}>
-        <DialogBody>
+      {deletingObjekt && (
+        <div className="fixed z-10 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={() => setDeletingObjekt(null)}></div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
           <div className="flex items-center gap-4">
             <div className="flex-shrink-0">
               <div className="rounded-full bg-red-100 p-3 dark:bg-red-900/20">
@@ -260,30 +265,33 @@ const Objekte: React.FC = () => {
               </div>
             </div>
             <div>
-              <Subheading level={3}>Objekt löschen</Subheading>
-              <Text className="mt-2">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">Objekt löschen</h3>
+              <p className="mt-2 text-sm text-gray-500">
                 Sind Sie sicher, dass Sie das Objekt "{deletingObjekt?.name}" löschen möchten? 
                 Diese Aktion kann nicht rückgängig gemacht werden.
-              </Text>
+              </p>
             </div>
           </div>
-        </DialogBody>
-        <DialogActions>
-          <Button
-            plain
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+          <button
             onClick={() => setDeletingObjekt(null)}
+            className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             Abbrechen
-          </Button>
-          <Button
-            color="red"
+          </button>
+          <button
             onClick={confirmDelete}
             disabled={deleteMutation.isLoading}
+            className="inline-flex justify-center px-4 py-2 ml-3 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {deleteMutation.isLoading ? 'Löschen...' : 'Löschen'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

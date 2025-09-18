@@ -450,6 +450,13 @@ const AksManagement: React.FC = () => {
               <div className="h-[600px] overflow-hidden">
                 <AksTreeView 
                   onSelectNode={setSelectedNode}
+                  onEditNode={handleEditAksCode}
+                  onDeleteNode={(node) => handleDeleteAksCode(node.id)}
+                  onAddChild={(parentNode) => {
+                    // TODO: Implement add child functionality
+                    console.log('Add child to:', parentNode.code);
+                    alert(`Unterelement zu ${parentNode.code} hinzufügen - Diese Funktion wird noch implementiert`);
+                  }}
                   selectedNodeId={selectedNode?.id}
                 />
               </div>

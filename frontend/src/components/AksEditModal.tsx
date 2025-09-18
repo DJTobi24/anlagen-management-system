@@ -41,15 +41,16 @@ const AksEditModal: React.FC<AksEditModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const updateData: Partial<AksCode> = {
+    // Convert to snake_case for backend
+    const updateData: any = {
       name: formData.name,
-      description: formData.description || undefined,
-      category: formData.category || undefined,
-      maintenanceIntervalMonths: formData.maintenanceIntervalMonths 
+      description: formData.description || null,
+      category: formData.category || null,
+      maintenance_interval_months: formData.maintenanceIntervalMonths 
         ? parseInt(formData.maintenanceIntervalMonths) 
-        : undefined,
-      maintenanceType: formData.maintenanceType || undefined,
-      maintenanceDescription: formData.maintenanceDescription || undefined
+        : null,
+      maintenance_type: formData.maintenanceType || null,
+      maintenance_description: formData.maintenanceDescription || null
     };
 
     onSave(updateData);

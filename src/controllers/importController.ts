@@ -4,6 +4,7 @@ import Joi from 'joi';
 import { ImportService } from '@/services/importService';
 import { ExtendedImportService } from '@/services/extendedImportService';
 import { ImportHistoryService } from '@/services/importHistoryService';
+import { ExcelTemplateService } from '@/services/excelTemplateService';
 import { AuthRequest } from '@/types';
 import { ExcelColumnMapping } from '@/types/import';
 import { createError } from '@/middleware/errorHandler';
@@ -241,6 +242,28 @@ export class ImportController {
         message: 'Queue statistics retrieved successfully',
         data: stats
       });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async downloadTemplateWithFields(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.mandantId) {
+        throw createError('Mandant ID required', 400);
+      }
+
+      // Generate template with AKS-specific fields
+      const buffer = await ExcelTemplateService.generateTemplateWithAksFields(req.mandantId);
+
+      // Set headers for file download
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="Anlagen_Import_Template_AKS_Fields.xlsx"');
+      res.setHeader('Content-Length', buffer.length.toString());
+
+      // Send file
+      res.send(buffer);
 
     } catch (error) {
       next(error);

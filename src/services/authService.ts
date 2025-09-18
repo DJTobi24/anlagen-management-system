@@ -47,7 +47,7 @@ export class AuthService {
     }
   }
 
-  static async login(email: string, password: string): Promise<AuthTokens> {
+  static async login(email: string, password: string, totpCode?: string): Promise<AuthTokens> {
     const query = `
       SELECT u.*, m.name as mandant_name 
       FROM users u
@@ -66,6 +66,25 @@ export class AuthService {
     
     if (!isValidPassword) {
       throw createError('Invalid credentials', 401);
+    }
+
+    // Check MFA if enabled
+    if (user.mfa_enabled && user.mfa_secret) {
+      if (!totpCode) {
+        throw createError('MFA code required', 401);
+      }
+      
+      const speakeasy = require('speakeasy');
+      const verified = speakeasy.totp.verify({
+        secret: user.mfa_secret,
+        encoding: 'base32',
+        token: totpCode,
+        window: 1
+      });
+      
+      if (!verified) {
+        throw createError('Invalid MFA code', 401);
+      }
     }
 
     const tokenVersion = await this.getTokenVersion(user.id);

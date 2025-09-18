@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Camera, CheckCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Save, Camera, CheckCircle, AlertCircle, QrCode } from 'lucide-react';
 import { db, CachedAnlage } from '../db/database';
 import { apiClient } from '../services/api';
 import { useSync } from '../contexts/SyncContext';
+import PhotoUpload from '../components/PhotoUpload';
+import QRScanner from '../components/QRScanner';
 
 export default function AnlageDetail() {
   const { aufnahmeId, anlageId } = useParams<{ aufnahmeId: string; anlageId: string }>();
@@ -18,8 +20,21 @@ export default function AnlageDetail() {
     zustands_bewertung: 0,
     notizen: '',
     description: '',
+    // Neue Felder
+    etage: '',
+    raum: '',
+    anzahl: 1,
+    hersteller: '',
+    typ: '',
+    seriennummer: '',
+    baujahr: '',
+    qrCodeManual: '',
+    herstellerQrData: '',
   });
+  const [photos, setPhotos] = useState<string[]>([]);
   const [saveMessage, setSaveMessage] = useState('');
+  const [showQrScanner, setShowQrScanner] = useState(false);
+  const [scannerTarget, setScannerTarget] = useState<'anlage' | 'hersteller' | null>(null);
 
   useEffect(() => {
     if (anlageId) {
@@ -42,7 +57,18 @@ export default function AnlageDetail() {
           zustands_bewertung: cachedAnlage.zustands_bewertung || 1,
           notizen: cachedAnlage.notizen || '',
           description: cachedAnlage.description || '',
+          // Neue Felder
+          etage: cachedAnlage.etage || '',
+          raum: cachedAnlage.raum || '',
+          anzahl: cachedAnlage.anzahl || 1,
+          hersteller: cachedAnlage.hersteller || '',
+          typ: cachedAnlage.typ || '',
+          seriennummer: cachedAnlage.seriennummer || '',
+          baujahr: cachedAnlage.baujahr ? String(cachedAnlage.baujahr) : '',
+          qrCodeManual: cachedAnlage.qr_code_manual || '',
+          herstellerQrData: cachedAnlage.hersteller_qr_data || '',
         });
+        setPhotos(cachedAnlage.fotos || []);
       } else {
         // If not in cache, we can't load the Anlage details
         // This shouldn't happen in normal flow as Anlagen are loaded with Aufträge
@@ -68,6 +94,17 @@ export default function AnlageDetail() {
         status: formData.status,
         zustands_bewertung: formData.zustands_bewertung,
         description: formData.description,
+        // Neue Felder
+        etage: formData.etage,
+        raum: formData.raum,
+        anzahl: formData.anzahl,
+        hersteller: formData.hersteller,
+        typ: formData.typ,
+        seriennummer: formData.seriennummer,
+        baujahr: formData.baujahr ? parseInt(formData.baujahr) : undefined,
+        qr_code_manual: formData.qrCodeManual,
+        hersteller_qr_data: formData.herstellerQrData,
+        fotos: photos.length > 0 ? photos : undefined,
       };
       await db.updateAnlageLocally(anlage.anlage_id, anlageUpdate);
       
@@ -88,7 +125,18 @@ export default function AnlageDetail() {
           await apiClient.put(`/anlagen/${anlage.anlage_id}`, {
             status: formData.status,
             zustandsBewertung: formData.zustands_bewertung,
-            description: formData.description
+            description: formData.description,
+            // Neue Felder
+            etage: formData.etage,
+            raum: formData.raum,
+            anzahl: formData.anzahl,
+            hersteller: formData.hersteller,
+            typ: formData.typ,
+            seriennummer: formData.seriennummer,
+            baujahr: formData.baujahr ? parseInt(formData.baujahr) : undefined,
+            qrCodeManual: formData.qrCodeManual,
+            herstellerQrData: formData.herstellerQrData,
+            fotos: photos.length > 0 ? photos : undefined,
           });
           await apiClient.post(`/datenaufnahme/${aufnahmeId}/anlagen/${anlage.anlage_id}/bearbeitet`, {
             notizen: formData.notizen,
@@ -267,20 +315,154 @@ export default function AnlageDetail() {
             />
           </div>
 
+          {/* QR-Code */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Fotos
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              QR-Code (optional)
             </label>
-            <button
-              type="button"
-              className="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors touch-active"
-            >
-              <Camera className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-600">Foto aufnehmen</p>
-              <p className="text-xs text-gray-500 mt-1">
-                (Funktion in Entwicklung)
-              </p>
-            </button>
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={formData.qrCodeManual}
+                onChange={(e) => setFormData({ ...formData, qrCodeManual: e.target.value })}
+                className="input flex-1"
+                placeholder="QR-Code eingeben oder scannen"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setScannerTarget('anlage');
+                  setShowQrScanner(true);
+                }}
+                className="btn-secondary p-2"
+                title="QR-Code scannen"
+              >
+                <QrCode className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Etage und Raum */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Etage
+              </label>
+              <input
+                type="text"
+                value={formData.etage}
+                onChange={(e) => setFormData({ ...formData, etage: e.target.value })}
+                className="input"
+                placeholder="z.B. EG, 1.OG"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Raum
+              </label>
+              <input
+                type="text"
+                value={formData.raum}
+                onChange={(e) => setFormData({ ...formData, raum: e.target.value })}
+                className="input"
+                placeholder="z.B. 101, Büro"
+              />
+            </div>
+          </div>
+
+          {/* Anzahl */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Anzahl (Stück)
+            </label>
+            <input
+              type="number"
+              value={formData.anzahl}
+              onChange={(e) => setFormData({ ...formData, anzahl: parseInt(e.target.value) || 1 })}
+              className="input"
+              min="1"
+              placeholder="1"
+            />
+          </div>
+
+          {/* Hersteller und Typ */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Hersteller
+              </label>
+              <input
+                type="text"
+                value={formData.hersteller}
+                onChange={(e) => setFormData({ ...formData, hersteller: e.target.value })}
+                className="input"
+                placeholder="z.B. Siemens"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Typ/Modell
+              </label>
+              <input
+                type="text"
+                value={formData.typ}
+                onChange={(e) => setFormData({ ...formData, typ: e.target.value })}
+                className="input"
+                placeholder="z.B. ABC123"
+              />
+            </div>
+          </div>
+
+          {/* Seriennummer */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Seriennummer
+            </label>
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={formData.seriennummer}
+                onChange={(e) => setFormData({ ...formData, seriennummer: e.target.value })}
+                className="input flex-1"
+                placeholder="Seriennummer eingeben oder scannen"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setScannerTarget('hersteller');
+                  setShowQrScanner(true);
+                }}
+                className="btn-secondary p-2"
+                title="Barcode/QR-Code scannen"
+              >
+                <QrCode className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Baujahr */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Baujahr
+            </label>
+            <input
+              type="number"
+              value={formData.baujahr}
+              onChange={(e) => setFormData({ ...formData, baujahr: e.target.value })}
+              className="input"
+              min="1900"
+              max={new Date().getFullYear() + 1}
+              placeholder={new Date().getFullYear().toString()}
+            />
+          </div>
+
+          {/* Fotos */}
+          <div>
+            <PhotoUpload 
+              photos={photos}
+              onPhotosChange={setPhotos}
+              maxPhotos={5}
+            />
           </div>
         </div>
       </div>
@@ -296,6 +478,36 @@ export default function AnlageDetail() {
           <span>{saving ? 'Speichern...' : 'Speichern & Zurück'}</span>
         </button>
       </div>
+      
+      {/* QR Scanner */}
+      {showQrScanner && (
+        <QRScanner
+          onScan={handleScan}
+          onClose={() => {
+            setShowQrScanner(false);
+            setScannerTarget(null);
+          }}
+          title={scannerTarget === 'anlage' ? 'QR-Code scannen' : 'Barcode/QR-Code scannen'}
+        />
+      )}
     </div>
   );
+  
+  // QR Scanner Handler
+  function handleScan(data: string) {
+    if (scannerTarget === 'anlage') {
+      setFormData({ ...formData, qrCodeManual: data });
+    } else if (scannerTarget === 'hersteller') {
+      // Parse scanned data - could be barcode or QR code
+      setFormData({ ...formData, herstellerQrData: data });
+      
+      // Try to extract serial number from the data
+      // This is a simple example - adjust based on your barcode format
+      if (data && !formData.seriennummer) {
+        setFormData(prev => ({ ...prev, seriennummer: data }));
+      }
+    }
+    setShowQrScanner(false);
+    setScannerTarget(null);
+  }
 }

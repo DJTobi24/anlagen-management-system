@@ -18,6 +18,10 @@ import importRoutes from '@/routes/import';
 import aksRoutes from '@/routes/aks';
 import fmDataRoutes from '@/routes/fmData';
 import datenaufnahmeRoutes from '@/routes/datenaufnahme';
+import mfaRoutes from '@/routes/mfa';
+import userManagementRoutes from '@/routes/userManagement';
+import settingsRoutes from '@/routes/settings';
+import aksFieldRoutes from '@/routes/aksFields';
 import { errorHandler } from '@/middleware/errorHandler';
 import { notFound } from '@/middleware/notFound';
 import { ImportService } from '@/services/importService';
@@ -61,6 +65,9 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 // Add swagger.json endpoint
 app.get(`${API_PREFIX}/${API_VERSION}/swagger.json`, (_req, res) => {
   res.json(swaggerDocument);
@@ -93,6 +100,7 @@ app.get(`${API_PREFIX}/${API_VERSION}`, (_req, res) => {
   res.sendFile(path.join(__dirname, 'docs', 'index.html'));
 });
 
+// Auth routes
 app.use(`${API_PREFIX}/${API_VERSION}/auth`, authRoutes);
 app.use(`${API_PREFIX}/${API_VERSION}/users`, userRoutes);
 app.use(`${API_PREFIX}/${API_VERSION}/mandanten`, mandantRoutes);
@@ -104,6 +112,10 @@ app.use(`${API_PREFIX}/${API_VERSION}/aks`, aksRoutes);
 app.use(`${API_PREFIX}/${API_VERSION}/aks-codes`, aksRoutes);
 app.use(`${API_PREFIX}/${API_VERSION}/fm-data`, fmDataRoutes);
 app.use(`${API_PREFIX}/${API_VERSION}/datenaufnahme`, datenaufnahmeRoutes);
+app.use(`${API_PREFIX}/${API_VERSION}/mfa`, mfaRoutes);
+app.use(`${API_PREFIX}/${API_VERSION}/management`, userManagementRoutes);
+app.use(`${API_PREFIX}/${API_VERSION}/settings`, settingsRoutes);
+app.use(`${API_PREFIX}/${API_VERSION}/aks-fields`, aksFieldRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

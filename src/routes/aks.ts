@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { AksController } from '@/controllers/aksController';
+import aksImportController from '@/controllers/aksImportController';
 import { authenticate, authorize } from '@/middleware/auth';
 import { UserRole } from '@/types';
 
@@ -123,6 +124,21 @@ router.post(
   '/import/error-report',
   authorize(UserRole.ADMIN),
   AksController.downloadAksErrorReport
+);
+
+// Import AKS codes with field definitions
+router.post(
+  '/import-with-fields',
+  authorize(UserRole.ADMIN),
+  aksImportController.uploadMiddleware,
+  aksImportController.importAksWithFields
+);
+
+// Download AKS import template with fields
+router.get(
+  '/import-template-with-fields',
+  authorize(UserRole.ADMIN),
+  aksImportController.downloadTemplate
 );
 
 export default router;

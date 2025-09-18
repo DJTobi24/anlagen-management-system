@@ -94,9 +94,32 @@ export const aksService = {
     return response.data.data;
   },
 
+  // Import from Excel with field definitions
+  importWithFields: async (file: File): Promise<AksImportResult> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await api.post<ApiResponse<AksImportResult>>('/aks/import-with-fields', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return response.data.data;
+  },
+
   // Download import template
   downloadImportTemplate: async (): Promise<Blob> => {
     const response = await api.get('/aks/import/template', {
+      responseType: 'blob',
+    });
+
+    return response.data;
+  },
+
+  // Download import template with fields
+  downloadImportTemplateWithFields: async (): Promise<Blob> => {
+    const response = await api.get('/aks/import-template-with-fields', {
       responseType: 'blob',
     });
 

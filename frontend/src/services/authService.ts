@@ -7,10 +7,11 @@ interface LoginResponse {
 }
 
 export const authService = {
-  async login(email: string, password: string): Promise<LoginResponse> {
-    const response = await api.post<ApiResponse<LoginResponse>>('/auth/login', {
+  async login(email: string, password: string, totpCode?: string): Promise<any> {
+    const response = await api.post<ApiResponse<any>>('/auth/login', {
       email,
       password,
+      totpCode,
     });
     return response.data.data;
   },
@@ -23,4 +24,21 @@ export const authService = {
   async logout(): Promise<void> {
     await api.post('/auth/logout');
   },
+
+  // MFA Features (works with both legacy and enterprise)
+  async setupMfa(method: 'totp' | 'webauthn'): Promise<any> {
+    const response = await api.post(`/mfa/setup`, { method });
+    return response.data.data;
+  },
+
+  async verifyMfa(code: string): Promise<any> {
+    const response = await api.post(`/mfa/verify-setup`, { token: code });
+    return response.data.data;
+  },
+
+  async getMfaStatus(): Promise<any> {
+    const response = await api.get(`/mfa/status`);
+    return response.data.data;
+  },
+
 };

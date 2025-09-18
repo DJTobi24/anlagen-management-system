@@ -105,7 +105,7 @@ const CreateObjektModal: React.FC<CreateObjektModalProps> = ({ liegenschaftId, o
                     id="liegenschaft"
                     value={formData.liegenschaft_id}
                     onChange={(e) => setFormData({ ...formData, liegenschaft_id: e.target.value })}
-                    className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-primary-500 focus:border-primary-500 sm:text-sm ${
+                    className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
                       errors.liegenschaft_id ? 'border-red-300' : 'border-gray-300'
                     }`}
                     disabled={!!liegenschaftId}
@@ -131,7 +131,7 @@ const CreateObjektModal: React.FC<CreateObjektModalProps> = ({ liegenschaftId, o
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-primary-500 focus:border-primary-500 sm:text-sm ${
+                    className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
                       errors.name ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="z.B. Gebäude A"
@@ -151,7 +151,7 @@ const CreateObjektModal: React.FC<CreateObjektModalProps> = ({ liegenschaftId, o
                       id="floor"
                       value={formData.floor}
                       onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                       placeholder="z.B. EG, 1. OG"
                     />
                   </div>
@@ -165,7 +165,7 @@ const CreateObjektModal: React.FC<CreateObjektModalProps> = ({ liegenschaftId, o
                       id="room"
                       value={formData.room}
                       onChange={(e) => setFormData({ ...formData, room: e.target.value })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                       placeholder="z.B. 101, A.1.05"
                     />
                   </div>
@@ -180,7 +180,7 @@ const CreateObjektModal: React.FC<CreateObjektModalProps> = ({ liegenschaftId, o
                     rows={3}
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     placeholder="Optionale Beschreibung des Objekts"
                   />
                 </div>
@@ -191,14 +191,14 @@ const CreateObjektModal: React.FC<CreateObjektModalProps> = ({ liegenschaftId, o
               <button
                 type="submit"
                 disabled={createMutation.isLoading}
-                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {createMutation.isLoading ? 'Erstellen...' : 'Erstellen'}
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
               >
                 Abbrechen
               </button>

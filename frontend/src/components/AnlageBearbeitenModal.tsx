@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Camera, Search, AlertCircle } from 'lucide-react';
 import { Anlage } from '../types';
+import { aksService } from '../services/aksService';
 
 interface Props {
   isOpen: boolean;
@@ -21,7 +22,16 @@ const AnlageBearbeitenModal: React.FC<Props> = ({
   datenaufnahmeContext,
   onUpdate
 }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    t_nummer: string;
+    aks_code: string;
+    description: string;
+    status: string;
+    zustands_bewertung: number;
+    dynamic_fields: Record<string, any>;
+    notizen: string;
+  }>({
     name: '',
     t_nummer: '',
     aks_code: '',
@@ -36,6 +46,11 @@ const AnlageBearbeitenModal: React.FC<Props> = ({
   const [error, setError] = useState('');
   const [showCamera, setShowCamera] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
+  
+  // AKS Field Mapping für Pflichtfelder
+  const [aksFieldMapping, setAksFieldMapping] = useState<any>(null);
+  const [loadingFields, setLoadingFields] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (anlage) {
@@ -49,12 +64,72 @@ const AnlageBearbeitenModal: React.FC<Props> = ({
         dynamic_fields: anlage.dynamic_fields || {},
         notizen: ''
       });
+      
+      // Load AKS field mapping wenn AKS Code vorhanden
+      if (anlage.aks_code) {
+        loadAksFieldMapping(anlage.aks_code);
+      }
     }
   }, [anlage]);
+  
+  // Load AKS Field Mapping
+  const loadAksFieldMapping = async (aksCode: string) => {
+    if (!aksCode) {
+      setAksFieldMapping(null);
+      return;
+    }
+    
+    setLoadingFields(true);
+    try {
+      const response = await aksService.getFieldMapping(aksCode);
+      if (response.data && response.data.fields) {
+        setAksFieldMapping(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load field mapping:', error);
+      setAksFieldMapping(null);
+    } finally {
+      setLoadingFields(false);
+    }
+  };
+  
+  // Validiere Pflichtfelder
+  const validateFields = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    if (aksFieldMapping && aksFieldMapping.fields) {
+      aksFieldMapping.fields.forEach((field: any) => {
+        const fieldKey = field.kas_code || field.kasCode || field.field_name || field.fieldName || field.id;
+        const displayName = field.displayName || field.display_name || 
+                           (field.fieldName || field.field_name ? `[${field.fieldName || field.field_name}]` : 'Feld');
+        const isRequired = field.is_required === 1 || field.is_required === true || field.isRequired === true;
+        
+        if (isRequired) {
+          const dynamicFieldsRecord = formData.dynamic_fields as Record<string, any>;
+          const value = dynamicFieldsRecord[fieldKey];
+          
+          if (value === undefined || value === null || value === '' || 
+              (Array.isArray(value) && value.length === 0)) {
+            errors[fieldKey] = `${displayName} ist ein Pflichtfeld`;
+          }
+        }
+      });
+    }
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    // Validiere Pflichtfelder
+    if (!validateFields()) {
+      setError('Bitte füllen Sie alle Pflichtfelder aus');
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -212,6 +287,228 @@ const AnlageBearbeitenModal: React.FC<Props> = ({
               </div>
             </div>
           </div>
+
+          {/* Dynamische AKS-Pflichtfelder */}
+          {aksFieldMapping && aksFieldMapping.fields && aksFieldMapping.fields.length > 0 && (
+            <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium text-gray-900">AKS-spezifische Felder</h4>
+                {aksFieldMapping.fields.some((f: any) => f.is_required === 1 || f.is_required === true || f.isRequired === true) && (
+                  <span className="text-xs text-amber-700 bg-amber-100 px-2 py-1 rounded">
+                    Gelb markierte Felder sind Pflichtfelder
+                  </span>
+                )}
+              </div>
+              
+              {loadingFields ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  <span className="ml-2 text-sm text-gray-500">Lade Felder...</span>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {aksFieldMapping.fields.map((field: any) => {
+                    // Handle multiple possible field structures
+                    // Use kas_code as the primary key for the field (for data storage)
+                    const fieldKey = field.kas_code || field.kasCode || field.field_name || field.fieldName || field.id;
+                    // IMPORTANT: Use displayName (from backend) for UI display - fieldName is system internal only!
+                    const displayName = field.displayName || field.display_name || 
+                                       (field.fieldName || field.field_name ? `[Bezeichnung fehlt: ${field.fieldName || field.field_name}]` : 'Unbenanntes Feld');
+                    const fieldType = (field.field_type || field.fieldType || field.data_type || 'text').toLowerCase();
+                    const isRequired = field.is_required === 1 || field.is_required === true || field.isRequired === true;
+                    const unit = field.unit || '';
+                    const helpText = field.help_text || field.helpText || '';
+                    
+                    // Determine if this is a boolean field
+                    const isBooleanField = fieldType === 'boolean' || 
+                      displayName.toLowerCase().includes('ja/nein') || 
+                      displayName.toLowerCase().includes('yes/no');
+                    
+                    return (
+                    <div key={fieldKey} className={`p-3 rounded-lg ${isRequired ? 'bg-amber-50 border-l-4 border-amber-400' : ''}`}>
+                      <label className={`block text-sm font-semibold ${isRequired ? 'text-amber-800' : 'text-gray-700'}`}>
+                        {displayName}
+                        {isRequired && <span className="text-red-600 ml-1 font-bold">*</span>}
+                        {unit && <span className="text-gray-500 ml-1 font-normal">({unit})</span>}
+                      </label>
+                      
+                      {/* Text/Textarea Field */}
+                      {(fieldType === 'text' || fieldType === 'textarea') && !isBooleanField && (
+                        fieldType === 'textarea' ? (
+                          <textarea
+                            value={formData.dynamic_fields[fieldKey] || ''}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              dynamic_fields: {
+                                ...formData.dynamic_fields,
+                                [fieldKey]: e.target.value
+                              }
+                            })}
+                            rows={3}
+                            className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
+                              fieldErrors[fieldKey] ? 'border-red-300' : 'border-gray-300'
+                            }`}
+                            placeholder={helpText || `${displayName} eingeben`}
+                          />
+                        ) : (
+                          <div className={unit ? 'mt-1 flex' : 'mt-1'}>
+                            <input
+                              type="text"
+                              value={formData.dynamic_fields[fieldKey] || ''}
+                              onChange={(e) => setFormData({
+                                ...formData,
+                                dynamic_fields: {
+                                  ...formData.dynamic_fields,
+                                  [fieldKey]: e.target.value
+                                }
+                              })}
+                              className={`block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
+                                fieldErrors[fieldKey] ? 'border-red-300' : 'border-gray-300'
+                              }`}
+                              placeholder={helpText || `${displayName} eingeben`}
+                            />
+                            {unit && (
+                              <span className="ml-2 inline-flex items-center px-3 text-sm text-gray-700 bg-gray-50 border border-gray-300 rounded-r-md">
+                                {unit}
+                              </span>
+                            )}
+                          </div>
+                        )
+                      )}
+                      
+                      {/* Number/Decimal Field */}
+                      {(fieldType === 'number' || fieldType === 'decimal' || fieldType === 'unit_value' || fieldType === 'integer') && (
+                        <div className="mt-1 flex">
+                          <input
+                            type="number"
+                            value={formData.dynamic_fields[fieldKey] || ''}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              dynamic_fields: {
+                                ...formData.dynamic_fields,
+                                [fieldKey]: e.target.value ? parseFloat(e.target.value) : ''
+                              }
+                            })}
+                            className={`block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
+                              fieldErrors[fieldKey] ? 'border-red-300' : 'border-gray-300'
+                            }`}
+                            placeholder={helpText || `${displayName} eingeben`}
+                            min={field.min_value || field.minValue || undefined}
+                            max={field.max_value || field.maxValue || undefined}
+                            step={fieldType === 'decimal' || fieldType === 'unit_value' ? '0.01' : '1'}
+                          />
+                          {unit && (
+                            <span className="ml-2 inline-flex items-center px-3 text-sm text-gray-700 bg-gray-50 border border-gray-300 rounded-r-md">
+                              {unit}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Boolean Field - Als Ja/Nein Radio Buttons */}
+                      {(fieldType === 'boolean' || isBooleanField) && (
+                        <div className="mt-1 space-y-2">
+                          <div className="flex items-center">
+                            <input
+                              type="radio"
+                              id={`field-${fieldKey}-ja`}
+                              name={`field-${fieldKey}`}
+                              value="true"
+                              checked={formData.dynamic_fields[fieldKey] === true || formData.dynamic_fields[fieldKey] === 'true'}
+                              onChange={() => setFormData({
+                                ...formData,
+                                dynamic_fields: {
+                                  ...formData.dynamic_fields,
+                                  [fieldKey]: true
+                                }
+                              })}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            />
+                            <label htmlFor={`field-${fieldKey}-ja`} className="ml-2 text-sm text-gray-700">
+                              Ja
+                            </label>
+                          </div>
+                          <div className="flex items-center">
+                            <input
+                              type="radio"
+                              id={`field-${fieldKey}-nein`}
+                              name={`field-${fieldKey}`}
+                              value="false"
+                              checked={formData.dynamic_fields[fieldKey] === false || formData.dynamic_fields[fieldKey] === 'false'}
+                              onChange={() => setFormData({
+                                ...formData,
+                                dynamic_fields: {
+                                  ...formData.dynamic_fields,
+                                  [fieldKey]: false
+                                }
+                              })}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            />
+                            <label htmlFor={`field-${fieldKey}-nein`} className="ml-2 text-sm text-gray-700">
+                              Nein
+                            </label>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Select Field */}
+                      {fieldType === 'select' && field.options && (
+                        <select
+                          value={formData.dynamic_fields[fieldKey] || ''}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            dynamic_fields: {
+                              ...formData.dynamic_fields,
+                              [fieldKey]: e.target.value
+                            }
+                          })}
+                          className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
+                            fieldErrors[fieldKey] ? 'border-red-300' : 'border-gray-300'
+                          }`}
+                        >
+                          <option value="">Bitte wählen...</option>
+                          {field.options.map((option: any) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      
+                      {/* Date Field */}
+                      {fieldType === 'date' && (
+                        <input
+                          type="date"
+                          value={formData.dynamic_fields[fieldKey] || ''}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            dynamic_fields: {
+                              ...formData.dynamic_fields,
+                              [fieldKey]: e.target.value
+                            }
+                          })}
+                          className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
+                            fieldErrors[fieldKey] ? 'border-red-300' : 'border-gray-300'
+                          }`}
+                        />
+                      )}
+                      
+                      {/* Error Message */}
+                      {fieldErrors[fieldKey] && (
+                        <p className="mt-1 text-sm text-red-600">{fieldErrors[fieldKey]}</p>
+                      )}
+                      
+                      {/* Help Text */}
+                      {helpText && !fieldErrors[fieldKey] && (
+                        <p className="mt-1 text-xs text-gray-500">{helpText}</p>
+                      )}
+                    </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Notizen für Datenaufnahme */}
           <div>

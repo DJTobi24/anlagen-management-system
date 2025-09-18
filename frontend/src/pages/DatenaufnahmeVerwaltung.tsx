@@ -73,7 +73,7 @@ const DatenaufnahmeVerwaltung: React.FC = () => {
     );
   };
 
-  const canCreateAuftraege = user?.rolle === 'admin' || user?.rolle === 'supervisor';
+  const canCreateAuftraege = user?.rolle === 'admin' || user?.rolle === 'supervisor' || user?.rolle === 'system_admin';
 
   return (
     <div className="p-6">

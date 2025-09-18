@@ -19,12 +19,32 @@ export class AnlageService {
       dynamicFields?: Record<string, any>;
       aksFieldValues?: AksFieldValue[];
     },
-    mandantId: string
+    mandantId: string,
+    sessionContext?: {
+      userId?: string;
+      userName?: string;
+      userEmail?: string;
+      requestSource?: string;
+    }
   ): Promise<Anlage> {
     const client = await pool.connect();
     
     try {
       await client.query('BEGIN');
+      
+      // Set session context if provided
+      if (sessionContext) {
+        if (sessionContext.userId) {
+          await client.query(`
+            SELECT set_session_context($1::UUID, $2, $3, $4)
+          `, [
+            sessionContext.userId,
+            sessionContext.userName || 'Unknown User',
+            sessionContext.userEmail || 'unknown@system.local',
+            sessionContext.requestSource || 'api'
+          ]);
+        }
+      }
 
       const objektQuery = `
         SELECT o.id 
@@ -46,24 +66,50 @@ export class AnlageService {
       const insertQuery = `
         INSERT INTO anlagen (
           id, objekt_id, t_nummer, aks_code, qr_code, name, description, 
-          status, zustands_bewertung, dynamic_fields
+          status, zustands_bewertung, dynamic_fields,
+          etage, raum, anzahl, hersteller, typ, seriennummer, baujahr,
+          qr_code_manual, hersteller_qr_data, fotos
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb,
+          $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+        )
         RETURNING *
       `;
 
-      const { rows } = await client.query(insertQuery, [
+      // Validate all parameters before query
+      const params = [
         anlageId,
         anlageData.objektId,
-        anlageData.tNummer,
+        anlageData.tNummer || null,
         anlageData.aksCode,
         qrCode,
         anlageData.name,
-        anlageData.description,
+        anlageData.description || null,
         anlageData.status,
         anlageData.zustandsBewertung,
         JSON.stringify(anlageData.dynamicFields || {}),
-      ]);
+        // New fields
+        anlageData.etage || null,
+        anlageData.raum || null,
+        anlageData.anzahl || 1,
+        anlageData.hersteller || null,
+        anlageData.typ || null,
+        anlageData.seriennummer || null,
+        anlageData.baujahr || null,
+        anlageData.qrCodeManual || null,
+        anlageData.herstellerQrData || null,
+        anlageData.fotos || null
+      ];
+      
+      // Log parameters for debugging
+      console.log('Insert parameters:', params.map((p, i) => `[${i}]: ${p}`));
+      
+      // Check for empty string UUIDs
+      if (anlageId === '' || anlageData.objektId === '') {
+        throw new Error(`Invalid UUID: anlageId="${anlageId}", objektId="${anlageData.objektId}"`);
+      }
+      
+      const { rows } = await client.query(insertQuery, params);
 
       const anlage = rows[0];
 
@@ -107,6 +153,20 @@ export class AnlageService {
     `;
 
     const { rows } = await pool.query(query, [mandantId]);
+    return rows;
+  }
+
+  static async getAnlagenByObjekt(objektId: string, mandantId: string): Promise<Anlage[]> {
+    const query = `
+      SELECT a.*, o.name as objekt_name, l.name as liegenschaft_name
+      FROM anlagen a
+      JOIN objekte o ON a.objekt_id = o.id
+      JOIN liegenschaften l ON o.liegenschaft_id = l.id
+      WHERE a.objekt_id = $1 AND l.mandant_id = $2 AND a.is_active = true
+      ORDER BY a.name ASC
+    `;
+
+    const { rows } = await pool.query(query, [objektId, mandantId]);
     return rows;
   }
 
@@ -170,6 +230,17 @@ export class AnlageService {
       dynamicFields: Record<string, any>;
       isActive: boolean;
       metadaten?: Record<string, any>;
+      // New fields
+      etage?: string;
+      raum?: string;
+      anzahl?: number;
+      hersteller?: string;
+      typ?: string;
+      seriennummer?: string;
+      baujahr?: number;
+      qrCodeManual?: string;
+      herstellerQrData?: string;
+      fotos?: string[];
     }>,
     user?: { id: string; name: string; email: string },
     source: string = 'web'
@@ -239,6 +310,47 @@ export class AnlageService {
       if (updateData.isActive !== undefined) {
         fields.push(`is_active = $${paramCount++}`);
         values.push(updateData.isActive);
+      }
+      // New fields
+      if (updateData.etage !== undefined) {
+        fields.push(`etage = $${paramCount++}`);
+        values.push(updateData.etage);
+      }
+      if (updateData.raum !== undefined) {
+        fields.push(`raum = $${paramCount++}`);
+        values.push(updateData.raum);
+      }
+      if (updateData.anzahl !== undefined) {
+        fields.push(`anzahl = $${paramCount++}`);
+        values.push(updateData.anzahl);
+      }
+      if (updateData.hersteller !== undefined) {
+        fields.push(`hersteller = $${paramCount++}`);
+        values.push(updateData.hersteller);
+      }
+      if (updateData.typ !== undefined) {
+        fields.push(`typ = $${paramCount++}`);
+        values.push(updateData.typ);
+      }
+      if (updateData.seriennummer !== undefined) {
+        fields.push(`seriennummer = $${paramCount++}`);
+        values.push(updateData.seriennummer);
+      }
+      if (updateData.baujahr !== undefined) {
+        fields.push(`baujahr = $${paramCount++}`);
+        values.push(updateData.baujahr);
+      }
+      if (updateData.qrCodeManual !== undefined) {
+        fields.push(`qr_code_manual = $${paramCount++}`);
+        values.push(updateData.qrCodeManual);
+      }
+      if (updateData.herstellerQrData !== undefined) {
+        fields.push(`hersteller_qr_data = $${paramCount++}`);
+        values.push(updateData.herstellerQrData);
+      }
+      if (updateData.fotos !== undefined) {
+        fields.push(`fotos = $${paramCount++}`);
+        values.push(updateData.fotos);
       }
       if (updateData.metadaten !== undefined) {
         fields.push(`metadaten = COALESCE(metadaten, '{}'::jsonb) || $${paramCount++}::jsonb`);
@@ -382,7 +494,7 @@ export class AnlageService {
     const query = `
       SELECT 
         ah.*,
-        CONCAT(u.first_name, ' ', u.last_name) as benutzer_vollname
+        CONCAT(u.first_name, ' ', u.last_name) as benutzer_name
       FROM aenderungshistorie ah
       LEFT JOIN users u ON ah.benutzer_id = u.id
       WHERE ah.entity_type = 'anlage' 

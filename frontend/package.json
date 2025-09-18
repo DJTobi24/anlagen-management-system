@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "2": "^3.0.0",
     "@headlessui/react": "^2.2.6",
     "@heroicons/react": "^2.0.16",
     "@types/file-saver": "^2.0.5",

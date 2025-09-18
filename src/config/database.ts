@@ -4,7 +4,7 @@ import mockPool from './database-mock';
 
 dotenv.config();
 
-const useMock = !process.env.DATABASE_URL || process.env.DATABASE_URL.includes('localhost') || process.env.DATABASE_URL.includes('mock');
+const useMock = !process.env.DATABASE_URL || process.env.DATABASE_URL.includes('mock') || (process.env.USE_REAL_DB !== 'true' && process.env.DATABASE_URL.includes('localhost'));
 
 const pool = useMock ? mockPool : new Pool({
   connectionString: process.env.DATABASE_URL,

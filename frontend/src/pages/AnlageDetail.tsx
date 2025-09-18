@@ -159,6 +159,53 @@ const AnlageDetail: React.FC = () => {
                 <dt className="text-sm font-medium text-gray-500">Zustandsbewertung</dt>
                 <dd className="mt-1 text-sm text-gray-900">{anlage.zustands_bewertung}/5</dd>
               </div>
+              {/* Neue Felder */}
+              {(anlage.etage || anlage.raum) && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Standort</dt>
+                  <dd className="mt-1 text-sm text-gray-900">
+                    {[anlage.etage && `Etage: ${anlage.etage}`, anlage.raum && `Raum: ${anlage.raum}`]
+                      .filter(Boolean)
+                      .join(', ')}
+                  </dd>
+                </div>
+              )}
+              {anlage.anzahl && anlage.anzahl > 1 && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Anzahl</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{anlage.anzahl} Stück</dd>
+                </div>
+              )}
+              {anlage.hersteller && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Hersteller</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{anlage.hersteller}</dd>
+                </div>
+              )}
+              {anlage.typ && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Typ/Modell</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{anlage.typ}</dd>
+                </div>
+              )}
+              {anlage.seriennummer && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Seriennummer</dt>
+                  <dd className="mt-1 text-sm text-gray-900 font-mono">{anlage.seriennummer}</dd>
+                </div>
+              )}
+              {anlage.baujahr && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Baujahr</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{anlage.baujahr}</dd>
+                </div>
+              )}
+              {anlage.qr_code_manual && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">QR-Code (manuell)</dt>
+                  <dd className="mt-1 text-sm text-gray-900 font-mono">{anlage.qr_code_manual}</dd>
+                </div>
+              )}
             </dl>
           </div>
           
@@ -189,22 +236,57 @@ const AnlageDetail: React.FC = () => {
           </div>
 
           {/* QR-Code */}
-          {anlage.qr_code && (
+          {(anlage.qr_code || anlage.qr_code_manual) && (
             <div className="card">
               <h3 className="text-lg font-medium text-gray-900 mb-4">
                 QR-Code
               </h3>
               <div className="text-center">
                 <div className="inline-block p-4 bg-white border-2 border-gray-300 rounded-lg shadow-sm">
-                  <QRCode 
-                    value={anlage.qr_code} 
-                    size={128}
-                    style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                    viewBox={`0 0 128 128`}
-                  />
-                  <p className="mt-3 text-sm font-medium text-gray-900">
-                    {anlage.qr_code}
-                  </p>
+                  {/* Priorität: 1. Manuell erfasster QR-Code, 2. System-generierter QR-Code */}
+                  {anlage.qr_code_manual ? (
+                    <>
+                      <QRCode 
+                        value={anlage.qr_code_manual} 
+                        size={128}
+                        level="H"
+                      />
+                      <p className="mt-3 text-sm font-semibold text-gray-700">
+                        {anlage.qr_code_manual}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        (Manuell erfasst)
+                      </p>
+                    </>
+                  ) : anlage.qr_code && anlage.qr_code.startsWith('data:image') ? (
+                    <>
+                      <img 
+                        src={anlage.qr_code} 
+                        alt="Anlage QR-Code"
+                        className="w-32 h-32"
+                      />
+                      <p className="mt-3 text-sm font-semibold text-gray-700">
+                        {anlage.t_nummer || 'Keine FM-Nummer'}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        (System-generiert)
+                      </p>
+                    </>
+                  ) : anlage.qr_code ? (
+                    <>
+                      <QRCode 
+                        value={anlage.qr_code} 
+                        size={128}
+                        level="H"
+                      />
+                      <p className="mt-3 text-sm font-semibold text-gray-700">
+                        {anlage.qr_code}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        (System-generiert)
+                      </p>
+                    </>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -235,12 +317,79 @@ const AnlageDetail: React.FC = () => {
       )}
 
       {activeTab === 'metadata' && (
-        <div className="card">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Import-Metadaten
-          </h3>
-          {anlage.metadaten && Object.keys(anlage.metadaten).length > 0 ? (
-            <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+        <div className="space-y-6">
+          {/* Neue Felder aus Datenaufnahme */}
+          {(anlage.etage || anlage.raum || anlage.hersteller || anlage.typ || anlage.seriennummer || anlage.baujahr || anlage.qr_code_manual || anlage.hersteller_qr_data) && (
+            <div className="card">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Erfasste Detaildaten
+              </h3>
+              <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                {anlage.etage && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Etage</dt>
+                    <dd className="mt-1 text-sm text-gray-900">{anlage.etage}</dd>
+                  </div>
+                )}
+                {anlage.raum && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Raum</dt>
+                    <dd className="mt-1 text-sm text-gray-900">{anlage.raum}</dd>
+                  </div>
+                )}
+                {anlage.anzahl && anlage.anzahl > 1 && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Anzahl</dt>
+                    <dd className="mt-1 text-sm text-gray-900">{anlage.anzahl} Stück</dd>
+                  </div>
+                )}
+                {anlage.hersteller && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Hersteller</dt>
+                    <dd className="mt-1 text-sm text-gray-900">{anlage.hersteller}</dd>
+                  </div>
+                )}
+                {anlage.typ && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Typ/Modell</dt>
+                    <dd className="mt-1 text-sm text-gray-900">{anlage.typ}</dd>
+                  </div>
+                )}
+                {anlage.seriennummer && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Seriennummer</dt>
+                    <dd className="mt-1 text-sm text-gray-900 font-mono">{anlage.seriennummer}</dd>
+                  </div>
+                )}
+                {anlage.baujahr && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Baujahr</dt>
+                    <dd className="mt-1 text-sm text-gray-900">{anlage.baujahr}</dd>
+                  </div>
+                )}
+                {anlage.qr_code_manual && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">QR-Code (manuell erfasst)</dt>
+                    <dd className="mt-1 text-sm text-gray-900 font-mono">{anlage.qr_code_manual}</dd>
+                  </div>
+                )}
+                {anlage.hersteller_qr_data && (
+                  <div className="sm:col-span-2">
+                    <dt className="text-sm font-medium text-gray-500">Hersteller QR-Daten</dt>
+                    <dd className="mt-1 text-sm text-gray-900 break-all">{anlage.hersteller_qr_data}</dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+          )}
+          
+          {/* Import-Metadaten */}
+          <div className="card">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Import-Metadaten
+            </h3>
+            {anlage.metadaten && Object.keys(anlage.metadaten).length > 0 ? (
+              <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
               {anlage.metadaten.vertrag && (
                 <div>
                   <dt className="text-sm font-medium text-gray-500">Vertrag</dt>
@@ -325,6 +474,7 @@ const AnlageDetail: React.FC = () => {
           ) : (
             <p className="text-gray-500 text-sm">Keine Metadaten vorhanden</p>
           )}
+          </div>
         </div>
       )}
 

@@ -5,8 +5,12 @@ import {
   ChevronDownIcon,
   FolderIcon,
   FolderOpenIcon,
+  CubeIcon,
   WrenchScrewdriverIcon,
-  EllipsisHorizontalIcon
+  Cog6ToothIcon,
+  PencilIcon,
+  TrashIcon,
+  PlusIcon
 } from '@heroicons/react/24/outline';
 import { aksService } from '../services/aksService';
 import { AksCode } from '../types/aks';
@@ -19,10 +23,19 @@ interface TreeNode extends AksCode {
 
 interface AksTreeViewProps {
   onSelectNode?: (node: TreeNode) => void;
+  onEditNode?: (node: TreeNode) => void;
+  onDeleteNode?: (node: TreeNode) => void;
+  onAddChild?: (parentNode: TreeNode) => void;
   selectedNodeId?: string;
 }
 
-const AksTreeView: React.FC<AksTreeViewProps> = ({ onSelectNode, selectedNodeId }) => {
+const AksTreeView: React.FC<AksTreeViewProps> = ({ 
+  onSelectNode, 
+  onEditNode,
+  onDeleteNode,
+  onAddChild,
+  selectedNodeId 
+}) => {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   
   // Fetch root level nodes (AKS.XX codes)
@@ -32,11 +45,10 @@ const AksTreeView: React.FC<AksTreeViewProps> = ({ onSelectNode, selectedNodeId 
     {
       staleTime: 5 * 60 * 1000, // 5 minutes
       select: (data) => {
-        // All nodes can potentially have children based on code structure
         return data.map(node => ({
           ...node,
-          hasChildren: true, // Assume all codes can have children
-          level: (node.code.match(/\./g) || []).length // Determine level by counting dots
+          hasChildren: true,
+          level: (node.code.match(/\./g) || []).length
         }));
       }
     }
@@ -52,95 +64,67 @@ const AksTreeView: React.FC<AksTreeViewProps> = ({ onSelectNode, selectedNodeId 
     setExpandedNodes(newExpanded);
   };
 
-  const getNodeIcon = (node: TreeNode, isExpanded: boolean) => {
-    // Determine icon based on code level
+  const getNodeIcon = (node: TreeNode) => {
     const dotCount = (node.code.match(/\./g) || []).length;
     
-    if (dotCount === 1) {
+    // Determine if this is an Anlage (equipment) - typically at level 4 (AKS.XX.XXX.XX.XX)
+    const isAnlage = dotCount >= 4 || (node.name && node.name.toLowerCase().includes('anlage'));
+    
+    if (isAnlage) {
+      // This is an Anlage (equipment/asset)
+      return <Cog6ToothIcon className="h-4 w-4 text-green-600" />;
+    } else if (dotCount === 1) {
       // Top level (AKS.XX) - main categories
-      return isExpanded ? 
-        <FolderOpenIcon className="h-5 w-5 text-blue-500" /> :
-        <FolderIcon className="h-5 w-5 text-blue-600" />;
+      return <FolderIcon className="h-4 w-4 text-blue-600" />;
     } else if (dotCount === 2) {
       // Second level (AKS.XX.XXX) - subcategories
-      return isExpanded ? 
-        <FolderOpenIcon className="h-5 w-5 text-amber-500" /> :
-        <FolderIcon className="h-5 w-5 text-amber-600" />;
+      return <CubeIcon className="h-4 w-4 text-purple-600" />;
     } else {
-      // Third level and deeper - equipment/items
-      return <WrenchScrewdriverIcon className="h-4 w-4 text-indigo-600" />;
+      // Third level and deeper - equipment groups
+      return <WrenchScrewdriverIcon className="h-4 w-4 text-orange-600" />;
     }
-  };
-
-  const getNodeStyles = (node: TreeNode, depth: number, isSelected: boolean, isExpanded: boolean) => {
-    const baseClasses = "group flex items-center py-2.5 px-3 cursor-pointer transition-all duration-150 ease-in-out rounded-lg mx-1 my-0.5";
-    const paddingLeft = depth * 24 + 8;
-    
-    let bgClasses = "";
-    let borderClasses = "";
-    
-    if (isSelected) {
-      bgClasses = "bg-gradient-to-r from-indigo-100 to-indigo-50 border-l-4 border-indigo-500";
-    } else {
-      bgClasses = "hover:bg-gray-50 hover:shadow-sm";
-    }
-
-    // Different styling based on level
-    if (node.level === 1) {
-      borderClasses = "border-l-2 border-transparent hover:border-blue-300";
-    }
-
-    return {
-      className: `${baseClasses} ${bgClasses} ${borderClasses}`,
-      style: { paddingLeft: `${paddingLeft}px` }
-    };
   };
 
   const renderNode = (node: TreeNode, depth: number = 0) => {
     const isExpanded = expandedNodes.has(node.code);
     const isSelected = selectedNodeId === node.id;
-    const nodeStyles = getNodeStyles(node, depth, isSelected, isExpanded);
+    const dotCount = (node.code.match(/\./g) || []).length;
+    const isAnlage = dotCount >= 4 || (node.name && node.name.toLowerCase().includes('anlage'));
 
     return (
-      <div key={node.id} className="select-none">
-        {/* Connection lines for hierarchy */}
-        {depth > 0 && (
-          <div className="relative">
-            <div 
-              className="absolute border-l border-gray-200" 
-              style={{
-                left: `${depth * 24 - 8}px`,
-                top: '0px',
-                height: '100%',
-                width: '1px'
-              }}
-            />
-            <div 
-              className="absolute border-t border-gray-200" 
-              style={{
-                left: `${depth * 24 - 8}px`,
-                top: '20px',
-                width: '16px',
-                height: '1px'
-              }}
-            />
-          </div>
-        )}
-
-        <div
-          className={nodeStyles.className}
-          style={nodeStyles.style}
-          onClick={() => onSelectNode?.(node)}
-        >
-          {/* Expand/Collapse Icon */}
-          <div className="w-6 h-6 flex items-center justify-center mr-2 flex-shrink-0">
-            {node.hasChildren ? (
+      <li key={node.id} role="treeitem" aria-expanded={isExpanded}>
+        <div className={`
+          hs-accordion ${isExpanded ? 'active' : ''} 
+          ${isSelected ? 'bg-blue-50 border-blue-200' : ''}
+        `}>
+          {/* Node Row */}
+          <div className={`
+            hs-accordion-toggle 
+            py-2 px-2.5 
+            inline-flex items-center 
+            gap-x-2 
+            w-full 
+            text-sm 
+            text-gray-800 
+            rounded-lg 
+            hover:bg-gray-100 
+            focus:outline-none focus:bg-gray-100 
+            dark:text-neutral-200 
+            dark:hover:bg-neutral-700 
+            dark:focus:bg-neutral-700
+            ${isSelected ? 'bg-blue-50' : ''}
+            group
+          `}
+            style={{ paddingLeft: `${depth * 1.5 + 0.5}rem` }}
+          >
+            {/* Expand/Collapse Button - only show if not an Anlage */}
+            {!isAnlage && node.hasChildren ? (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleNode(node.code);
                 }}
-                className="p-1 hover:bg-white hover:shadow-sm rounded-md transition-colors duration-150"
+                className="flex-shrink-0 p-0.5 hover:bg-gray-200 rounded transition-colors"
               >
                 {isExpanded ? (
                   <ChevronDownIcon className="h-4 w-4 text-gray-600" />
@@ -149,91 +133,99 @@ const AksTreeView: React.FC<AksTreeViewProps> = ({ onSelectNode, selectedNodeId 
                 )}
               </button>
             ) : (
-              <div className="w-4 h-4" />
+              <div className="w-5 h-5 flex-shrink-0" />
             )}
-          </div>
 
-          {/* Node Icon */}
-          <div className="mr-3 flex-shrink-0">
-            {getNodeIcon(node, isExpanded)}
-          </div>
+            {/* Node Icon */}
+            <div className="flex-shrink-0">
+              {getNodeIcon(node)}
+            </div>
 
-          {/* Node Content */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                {/* Node Name */}
-                <div className={`font-medium truncate ${
-                  node.level === 1 ? 'text-base text-gray-900' :
-                  node.level === 2 ? 'text-sm text-gray-800' :
-                  'text-sm text-gray-700'
-                }`}>
+            {/* Node Content */}
+            <div 
+              className="flex-grow flex items-center justify-between cursor-pointer"
+              onClick={() => onSelectNode?.(node)}
+            >
+              <div className="flex-grow">
+                <span className={`
+                  ${isAnlage ? 'font-semibold text-green-700' : 'font-medium'}
+                  ${isSelected ? 'text-blue-700' : ''}
+                `}>
                   {node.name}
-                </div>
-                
-                {/* Node Code and Level Badge */}
-                <div className="flex items-center mt-1 space-x-2">
-                  <span className="text-xs font-mono text-gray-500 bg-white border border-gray-200 px-2 py-0.5 rounded">
-                    {node.code}
-                  </span>
-                  
-                  {node.level && (
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600">
-                      Ebene {node.level}
-                    </span>
-                  )}
-                  
-                </div>
-              </div>
-              
-              {/* Status Indicators */}
-              <div className="flex items-center space-x-2 ml-4">
-                {/* Maintenance Indicator */}
+                </span>
+                <span className="ml-2 text-xs text-gray-500 font-mono">
+                  {node.code}
+                </span>
                 {node.maintenanceIntervalMonths && (
-                  <div className="flex items-center space-x-1">
-                    <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
-                    <span className="text-xs text-gray-600 font-medium">
-                      {node.maintenanceIntervalMonths}M
-                    </span>
-                  </div>
-                )}
-                
-                {/* Children indicator - show only for folders */}
-                {node.hasChildren && node.level && node.level < 4 && (
-                  <span className="text-xs bg-white border border-gray-200 text-gray-600 px-2 py-1 rounded-full font-medium">
-                    {isExpanded ? '−' : '+'}
+                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                    Wartung: {node.maintenanceIntervalMonths}M
                   </span>
                 )}
+                {isAnlage && (
+                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                    Anlage
+                  </span>
+                )}
+              </div>
 
-                {/* Actions Menu */}
-                <button 
-                  className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-gray-100 rounded-md transition-all duration-150"
+              {/* Action Buttons */}
+              <div className="flex items-center gap-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {!isAnlage && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAddChild?.(node);
+                    }}
+                    className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                    title="Unterelement hinzufügen"
+                  >
+                    <PlusIcon className="h-3.5 w-3.5 text-gray-600" />
+                  </button>
+                )}
+                <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    // TODO: Show context menu
+                    onEditNode?.(node);
                   }}
+                  className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                  title="Bearbeiten"
                 >
-                  <EllipsisHorizontalIcon className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                  <PencilIcon className="h-3.5 w-3.5 text-gray-600" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteNode?.(node);
+                  }}
+                  className="p-1.5 hover:bg-red-100 rounded transition-colors"
+                  title="Löschen"
+                >
+                  <TrashIcon className="h-3.5 w-3.5 text-red-600" />
                 </button>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Children */}
-        {isExpanded && node.hasChildren && (
-          <div className="relative">
-            <NodeChildren 
-              nodeCode={node.code} 
-              depth={depth + 1}
-              onSelectNode={onSelectNode}
-              selectedNodeId={selectedNodeId}
-              expandedNodes={expandedNodes}
-              setExpandedNodes={setExpandedNodes}
-            />
-          </div>
-        )}
-      </div>
+          {/* Children Container */}
+          {isExpanded && !isAnlage && node.hasChildren && (
+            <div className="hs-accordion-content w-full overflow-hidden transition-[height] duration-300">
+              <ul className="ps-2" role="group">
+                <NodeChildren 
+                  nodeCode={node.code} 
+                  depth={depth + 1}
+                  onSelectNode={onSelectNode}
+                  onEditNode={onEditNode}
+                  onDeleteNode={onDeleteNode}
+                  onAddChild={onAddChild}
+                  selectedNodeId={selectedNodeId}
+                  expandedNodes={expandedNodes}
+                  setExpandedNodes={setExpandedNodes}
+                />
+              </ul>
+            </div>
+          )}
+        </div>
+      </li>
     );
   };
 
@@ -241,7 +233,7 @@ const AksTreeView: React.FC<AksTreeViewProps> = ({ onSelectNode, selectedNodeId 
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-sm text-gray-600">Lade AKS-Hierarchie...</p>
         </div>
       </div>
@@ -276,9 +268,47 @@ const AksTreeView: React.FC<AksTreeViewProps> = ({ onSelectNode, selectedNodeId 
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-gray-50 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-      <div className="p-4 space-y-1">
-        {rootNodes.map(node => renderNode(node as TreeNode))}
+    <div className="w-full">
+      {/* Tree View Container */}
+      <div className="border border-gray-200 rounded-lg bg-white">
+        {/* Header */}
+        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+          <h3 className="text-sm font-semibold text-gray-900">
+            AKS-Hierarchie
+          </h3>
+          <p className="text-xs text-gray-500 mt-1">
+            Klicken Sie auf die Pfeile um die Struktur zu erweitern
+          </p>
+        </div>
+
+        {/* Tree Content */}
+        <div className="p-4 max-h-[600px] overflow-y-auto">
+          <ul className="space-y-0.5" role="tree">
+            {rootNodes.map(node => renderNode(node as TreeNode))}
+          </ul>
+        </div>
+
+        {/* Footer with Legend */}
+        <div className="px-4 py-3 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center gap-x-6 text-xs text-gray-600">
+            <div className="flex items-center gap-x-2">
+              <FolderIcon className="h-3.5 w-3.5 text-blue-600" />
+              <span>Hauptkategorie</span>
+            </div>
+            <div className="flex items-center gap-x-2">
+              <CubeIcon className="h-3.5 w-3.5 text-purple-600" />
+              <span>Unterkategorie</span>
+            </div>
+            <div className="flex items-center gap-x-2">
+              <WrenchScrewdriverIcon className="h-3.5 w-3.5 text-orange-600" />
+              <span>Anlagengruppe</span>
+            </div>
+            <div className="flex items-center gap-x-2">
+              <Cog6ToothIcon className="h-3.5 w-3.5 text-green-600" />
+              <span>Anlage</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -289,20 +319,32 @@ const NodeChildren: React.FC<{
   nodeCode: string; 
   depth: number; 
   onSelectNode?: (node: TreeNode) => void;
+  onEditNode?: (node: TreeNode) => void;
+  onDeleteNode?: (node: TreeNode) => void;
+  onAddChild?: (parentNode: TreeNode) => void;
   selectedNodeId?: string;
   expandedNodes: Set<string>;
   setExpandedNodes: React.Dispatch<React.SetStateAction<Set<string>>>;
-}> = ({ nodeCode, depth, onSelectNode, selectedNodeId, expandedNodes, setExpandedNodes }) => {
+}> = ({ 
+  nodeCode, 
+  depth, 
+  onSelectNode, 
+  onEditNode,
+  onDeleteNode,
+  onAddChild,
+  selectedNodeId, 
+  expandedNodes, 
+  setExpandedNodes 
+}) => {
   const { data: children, isLoading } = useQuery(
     ['aks-tree-children', nodeCode],
     () => aksService.getAksTree(nodeCode),
     {
       staleTime: 5 * 60 * 1000,
       select: (data) => {
-        // Determine if nodes can have children based on code structure
         return data.map(node => ({
           ...node,
-          hasChildren: true, // Most codes can have children except the deepest level
+          hasChildren: true,
           level: (node.code.match(/\./g) || []).length
         }));
       }
@@ -319,94 +361,67 @@ const NodeChildren: React.FC<{
     setExpandedNodes(newExpanded);
   };
 
-  const getNodeIcon = (node: TreeNode, isExpanded: boolean) => {
-    // Determine icon based on code level
+  const getNodeIcon = (node: TreeNode) => {
     const dotCount = (node.code.match(/\./g) || []).length;
     
-    if (dotCount === 1) {
+    // Determine if this is an Anlage (equipment) - typically at level 4 (AKS.XX.XXX.XX.XX)
+    const isAnlage = dotCount >= 4 || (node.name && node.name.toLowerCase().includes('anlage'));
+    
+    if (isAnlage) {
+      // This is an Anlage (equipment/asset)
+      return <Cog6ToothIcon className="h-4 w-4 text-green-600" />;
+    } else if (dotCount === 1) {
       // Top level (AKS.XX) - main categories
-      return isExpanded ? 
-        <FolderOpenIcon className="h-5 w-5 text-blue-500" /> :
-        <FolderIcon className="h-5 w-5 text-blue-600" />;
+      return <FolderIcon className="h-4 w-4 text-blue-600" />;
     } else if (dotCount === 2) {
       // Second level (AKS.XX.XXX) - subcategories
-      return isExpanded ? 
-        <FolderOpenIcon className="h-5 w-5 text-amber-500" /> :
-        <FolderIcon className="h-5 w-5 text-amber-600" />;
+      return <CubeIcon className="h-4 w-4 text-purple-600" />;
     } else {
-      // Third level and deeper - equipment/items
-      return <WrenchScrewdriverIcon className="h-4 w-4 text-indigo-600" />;
+      // Third level and deeper - equipment groups
+      return <WrenchScrewdriverIcon className="h-4 w-4 text-orange-600" />;
     }
-  };
-
-  const getNodeStyles = (node: TreeNode, depth: number, isSelected: boolean, isExpanded: boolean) => {
-    const baseClasses = "group flex items-center py-2.5 px-3 cursor-pointer transition-all duration-150 ease-in-out rounded-lg mx-1 my-0.5";
-    const paddingLeft = depth * 24 + 8;
-    
-    let bgClasses = "";
-    let borderClasses = "";
-    
-    if (isSelected) {
-      bgClasses = "bg-gradient-to-r from-indigo-100 to-indigo-50 border-l-4 border-indigo-500";
-    } else {
-      bgClasses = "hover:bg-gray-50 hover:shadow-sm";
-    }
-
-    if (node.level === 1) {
-      borderClasses = "border-l-2 border-transparent hover:border-blue-300";
-    }
-
-    return {
-      className: `${baseClasses} ${bgClasses} ${borderClasses}`,
-      style: { paddingLeft: `${paddingLeft}px` }
-    };
   };
 
   const renderChildNode = (node: TreeNode) => {
     const isExpanded = expandedNodes.has(node.code);
     const isSelected = selectedNodeId === node.id;
-    const nodeStyles = getNodeStyles(node, depth, isSelected, isExpanded);
+    const dotCount = (node.code.match(/\./g) || []).length;
+    const isAnlage = dotCount >= 4 || (node.name && node.name.toLowerCase().includes('anlage'));
 
     return (
-      <div key={node.id} className="select-none">
-        {/* Connection lines for hierarchy */}
-        {depth > 0 && (
-          <div className="relative">
-            <div 
-              className="absolute border-l border-gray-200" 
-              style={{
-                left: `${depth * 24 - 8}px`,
-                top: '0px',
-                height: '100%',
-                width: '1px'
-              }}
-            />
-            <div 
-              className="absolute border-t border-gray-200" 
-              style={{
-                left: `${depth * 24 - 8}px`,
-                top: '20px',
-                width: '16px',
-                height: '1px'
-              }}
-            />
-          </div>
-        )}
-
-        <div
-          className={nodeStyles.className}
-          style={nodeStyles.style}
-          onClick={() => onSelectNode?.(node)}
-        >
-          {/* Expand/Collapse Icon */}
-          <div className="w-6 h-6 flex items-center justify-center mr-2 flex-shrink-0">
-            {node.hasChildren ? (
+      <li key={node.id} role="treeitem" aria-expanded={isExpanded}>
+        <div className={`
+          hs-accordion ${isExpanded ? 'active' : ''} 
+          ${isSelected ? 'bg-blue-50 border-blue-200' : ''}
+        `}>
+          {/* Node Row */}
+          <div className={`
+            hs-accordion-toggle 
+            py-2 px-2.5 
+            inline-flex items-center 
+            gap-x-2 
+            w-full 
+            text-sm 
+            text-gray-800 
+            rounded-lg 
+            hover:bg-gray-100 
+            focus:outline-none focus:bg-gray-100 
+            dark:text-neutral-200 
+            dark:hover:bg-neutral-700 
+            dark:focus:bg-neutral-700
+            ${isSelected ? 'bg-blue-50' : ''}
+            group
+          `}
+            style={{ paddingLeft: `${depth * 1.5 + 0.5}rem` }}
+          >
+            {/* Expand/Collapse Button - only show if not an Anlage */}
+            {!isAnlage && node.hasChildren ? (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleNode(node.code);
                 }}
-                className="p-1 hover:bg-white hover:shadow-sm rounded-md transition-colors duration-150"
+                className="flex-shrink-0 p-0.5 hover:bg-gray-200 rounded transition-colors"
               >
                 {isExpanded ? (
                   <ChevronDownIcon className="h-4 w-4 text-gray-600" />
@@ -415,102 +430,110 @@ const NodeChildren: React.FC<{
                 )}
               </button>
             ) : (
-              <div className="w-4 h-4" />
+              <div className="w-5 h-5 flex-shrink-0" />
             )}
-          </div>
 
-          {/* Node Icon */}
-          <div className="mr-3 flex-shrink-0">
-            {getNodeIcon(node, isExpanded)}
-          </div>
+            {/* Node Icon */}
+            <div className="flex-shrink-0">
+              {getNodeIcon(node)}
+            </div>
 
-          {/* Node Content */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                {/* Node Name */}
-                <div className={`font-medium truncate ${
-                  node.level === 1 ? 'text-base text-gray-900' :
-                  node.level === 2 ? 'text-sm text-gray-800' :
-                  'text-sm text-gray-700'
-                }`}>
+            {/* Node Content */}
+            <div 
+              className="flex-grow flex items-center justify-between cursor-pointer"
+              onClick={() => onSelectNode?.(node)}
+            >
+              <div className="flex-grow">
+                <span className={`
+                  ${isAnlage ? 'font-semibold text-green-700' : 'font-medium'}
+                  ${isSelected ? 'text-blue-700' : ''}
+                `}>
                   {node.name}
-                </div>
-                
-                {/* Node Code and Level Badge */}
-                <div className="flex items-center mt-1 space-x-2">
-                  <span className="text-xs font-mono text-gray-500 bg-white border border-gray-200 px-2 py-0.5 rounded">
-                    {node.code}
-                  </span>
-                  
-                  {node.level && (
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600">
-                      Ebene {node.level}
-                    </span>
-                  )}
-                  
-                </div>
-              </div>
-              
-              {/* Status Indicators */}
-              <div className="flex items-center space-x-2 ml-4">
-                {/* Maintenance Indicator */}
+                </span>
+                <span className="ml-2 text-xs text-gray-500 font-mono">
+                  {node.code}
+                </span>
                 {node.maintenanceIntervalMonths && (
-                  <div className="flex items-center space-x-1">
-                    <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
-                    <span className="text-xs text-gray-600 font-medium">
-                      {node.maintenanceIntervalMonths}M
-                    </span>
-                  </div>
-                )}
-                
-                {/* Children indicator - show only for folders */}
-                {node.hasChildren && node.level && node.level < 4 && (
-                  <span className="text-xs bg-white border border-gray-200 text-gray-600 px-2 py-1 rounded-full font-medium">
-                    {isExpanded ? '−' : '+'}
+                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                    Wartung: {node.maintenanceIntervalMonths}M
                   </span>
                 )}
+                {isAnlage && (
+                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                    Anlage
+                  </span>
+                )}
+              </div>
 
-                {/* Actions Menu */}
-                <button 
-                  className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-gray-100 rounded-md transition-all duration-150"
+              {/* Action Buttons */}
+              <div className="flex items-center gap-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {!isAnlage && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAddChild?.(node);
+                    }}
+                    className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                    title="Unterelement hinzufügen"
+                  >
+                    <PlusIcon className="h-3.5 w-3.5 text-gray-600" />
+                  </button>
+                )}
+                <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    // TODO: Show context menu
+                    onEditNode?.(node);
                   }}
+                  className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                  title="Bearbeiten"
                 >
-                  <EllipsisHorizontalIcon className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                  <PencilIcon className="h-3.5 w-3.5 text-gray-600" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteNode?.(node);
+                  }}
+                  className="p-1.5 hover:bg-red-100 rounded transition-colors"
+                  title="Löschen"
+                >
+                  <TrashIcon className="h-3.5 w-3.5 text-red-600" />
                 </button>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Grandchildren */}
-        {isExpanded && node.hasChildren && (
-          <div className="relative">
-            <NodeChildren 
-              nodeCode={node.code} 
-              depth={depth + 1}
-              onSelectNode={onSelectNode}
-              selectedNodeId={selectedNodeId}
-              expandedNodes={expandedNodes}
-              setExpandedNodes={setExpandedNodes}
-            />
-          </div>
-        )}
-      </div>
+          {/* Grandchildren Container */}
+          {isExpanded && !isAnlage && node.hasChildren && (
+            <div className="hs-accordion-content w-full overflow-hidden transition-[height] duration-300">
+              <ul className="ps-2" role="group">
+                <NodeChildren 
+                  nodeCode={node.code} 
+                  depth={depth + 1}
+                  onSelectNode={onSelectNode}
+                  onEditNode={onEditNode}
+                  onDeleteNode={onDeleteNode}
+                  onAddChild={onAddChild}
+                  selectedNodeId={selectedNodeId}
+                  expandedNodes={expandedNodes}
+                  setExpandedNodes={setExpandedNodes}
+                />
+              </ul>
+            </div>
+          )}
+        </div>
+      </li>
     );
   };
 
   if (isLoading) {
     return (
-      <div className="py-3" style={{ paddingLeft: `${depth * 24 + 32}px` }}>
+      <li className="py-2" style={{ paddingLeft: `${depth * 1.5 + 1}rem` }}>
         <div className="flex items-center space-x-2 text-xs text-gray-500">
           <div className="animate-spin h-3 w-3 border border-gray-300 border-t-gray-600 rounded-full"></div>
           <span>Lade Unterelemente...</span>
         </div>
-      </div>
+      </li>
     );
   }
 

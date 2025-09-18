@@ -4,7 +4,7 @@ import mockRedis from './redis-mock';
 
 dotenv.config();
 
-const useMock = !process.env.REDIS_URL || process.env.REDIS_URL.includes('localhost') || process.env.REDIS_URL.includes('mock');
+const useMock = !process.env.REDIS_URL || process.env.REDIS_URL.includes('mock') || (process.env.USE_REAL_DB !== 'true' && process.env.REDIS_URL.includes('localhost'));
 
 const redisClient = useMock ? mockRedis : createClient({
   url: process.env.REDIS_URL || 'redis://localhost:6379'

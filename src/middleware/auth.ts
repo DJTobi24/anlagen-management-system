@@ -42,6 +42,11 @@ export const authorize = (...roles: UserRole[]) => {
       return next(createError('Authentication required', 401));
     }
 
+    // System admins have access to everything
+    if (req.user.role === UserRole.SYSTEM_ADMIN) {
+      return next();
+    }
+
     if (!roles.includes(req.user.role as UserRole)) {
       return next(createError('Insufficient permissions', 403));
     }

@@ -20,6 +20,8 @@ import Reports from './pages/Reports';
 import ImportReports from './pages/ImportReports';
 import DatenaufnahmeVerwaltung from './pages/DatenaufnahmeVerwaltung';
 import MeineDatenaufnahmen from './pages/MeineDatenaufnahmen';
+import UserManagement from './pages/UserManagement';
+import AksFieldManagement from './pages/AksFieldManagement';
 
 // ProtectedRoute component for future use
 // const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -105,10 +107,24 @@ const AppRoutes: React.FC = () => {
           </Layout>
         </ProtectedRoute>
       } />
+      <Route path="/aks-fields" element={
+        <ProtectedRoute>
+          <Layout>
+            <AksFieldManagement />
+          </Layout>
+        </ProtectedRoute>
+      } />
       <Route path="/users" element={
         <ProtectedRoute>
           <Layout>
             {user && user.rolle === 'admin' ? <Users /> : <Navigate to="/" />}
+          </Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/user-management" element={
+        <ProtectedRoute>
+          <Layout>
+            {user && (user.rolle === 'admin' || user.rolle === 'system_admin') ? <UserManagement /> : <Navigate to="/" />}
           </Layout>
         </ProtectedRoute>
       } />

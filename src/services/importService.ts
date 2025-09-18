@@ -30,7 +30,8 @@ export class ImportService {
     mandantId: string,
     userId: string,
     file: Express.Multer.File,
-    columnMapping: ExcelColumnMapping
+    columnMapping: ExcelColumnMapping,
+    includeAksFields: boolean = true
   ): Promise<{ jobId: string; validation: ImportValidationResult }> {
     // Validate file
     await this.validateUploadedFile(file);

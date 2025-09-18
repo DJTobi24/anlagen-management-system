@@ -3,6 +3,7 @@ import Joi from 'joi';
 import { AnlageService } from '@/services/anlageService';
 import { AuthRequest } from '@/types';
 import { createError } from '@/middleware/errorHandler';
+import pool from '@/config/database';
 
 const createAnlageSchema = Joi.object({
   objektId: Joi.string().uuid().required(),
@@ -13,6 +14,18 @@ const createAnlageSchema = Joi.object({
   status: Joi.string().valid('aktiv', 'inaktiv', 'wartung', 'defekt').default('aktiv'),
   zustandsBewertung: Joi.number().integer().min(1).max(5).required(),
   dynamicFields: Joi.object().optional(),
+  aufnahmeId: Joi.string().uuid().optional(), // For PWA app integration
+  // New fields
+  etage: Joi.string().optional().allow(''),
+  raum: Joi.string().optional().allow(''),
+  anzahl: Joi.number().integer().min(1).optional().default(1),
+  hersteller: Joi.string().optional().allow(''),
+  typ: Joi.string().optional().allow(''),
+  seriennummer: Joi.string().optional().allow(''),
+  baujahr: Joi.number().integer().min(1900).max(9999).optional(),
+  qrCodeManual: Joi.string().optional().allow(''),
+  herstellerQrData: Joi.string().optional().allow(''),
+  fotos: Joi.array().items(Joi.string()).optional(),
 });
 
 const updateAnlageSchema = Joi.object({
@@ -26,6 +39,17 @@ const updateAnlageSchema = Joi.object({
   isActive: Joi.boolean().optional(),
   notizen: Joi.string().optional().allow(''), // Added for PWA compatibility
   metadaten: Joi.object().optional(), // Added for metadata updates
+  // New fields
+  etage: Joi.string().optional().allow(''),
+  raum: Joi.string().optional().allow(''),
+  anzahl: Joi.number().integer().min(1).optional(),
+  hersteller: Joi.string().optional().allow(''),
+  typ: Joi.string().optional().allow(''),
+  seriennummer: Joi.string().optional().allow(''),
+  baujahr: Joi.number().integer().min(1900).max(9999).optional(),
+  qrCodeManual: Joi.string().optional().allow(''),
+  herstellerQrData: Joi.string().optional().allow(''),
+  fotos: Joi.array().items(Joi.string()).optional(),
 });
 
 const searchAnlagenSchema = Joi.object({
@@ -39,7 +63,12 @@ const searchAnlagenSchema = Joi.object({
 export class AnlageController {
   static async createAnlage(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      if (!req.mandantId) {
+      if (!req.mandantId || req.mandantId === '') {
+        console.error('Missing mandantId:', {
+          mandantId: req.mandantId,
+          user: req.user,
+          headers: req.headers
+        });
         throw createError('Mandant ID required', 400);
       }
 
@@ -48,7 +77,22 @@ export class AnlageController {
         throw createError(error.details[0].message, 400);
       }
 
-      const anlage = await AnlageService.createAnlage(value, req.mandantId);
+      // Session context is now handled in the service layer per transaction
+
+      // Debug logging
+      console.log('Creating Anlage with data:', JSON.stringify(value, null, 2));
+      console.log('MandantId:', req.mandantId);
+      console.log('User:', req.user);
+      
+      // Prepare session context
+      const sessionContext = req.user ? {
+        userId: req.user.id,
+        userName: `${req.user.first_name || req.user.firstName || ''} ${req.user.last_name || req.user.lastName || ''}`.trim() || req.user.email,
+        userEmail: req.user.email,
+        requestSource: req.headers['x-request-source'] as string || 'api'
+      } : undefined;
+      
+      const anlage = await AnlageService.createAnlage(value, req.mandantId, sessionContext);
 
       res.status(201).json({
         message: 'Anlage created successfully',
@@ -65,7 +109,31 @@ export class AnlageController {
         throw createError('Mandant ID required', 400);
       }
 
-      const anlagen = await AnlageService.getAnlagenByMandant(req.mandantId);
+      const { objekt_id, status, search } = req.query;
+      
+      let anlagen;
+      
+      if (objekt_id) {
+        // Filter by specific objekt_id
+        anlagen = await AnlageService.getAnlagenByObjekt(objekt_id as string, req.mandantId);
+      } else {
+        // Get all anlagen for mandant
+        anlagen = await AnlageService.getAnlagenByMandant(req.mandantId);
+      }
+
+      // Apply additional filters if needed
+      if (status) {
+        anlagen = anlagen.filter((anlage: any) => anlage.status === status);
+      }
+      
+      if (search) {
+        const searchLower = (search as string).toLowerCase();
+        anlagen = anlagen.filter((anlage: any) => 
+          anlage.name.toLowerCase().includes(searchLower) ||
+          (anlage.t_nummer && anlage.t_nummer.toLowerCase().includes(searchLower)) ||
+          (anlage.aks_code && anlage.aks_code.toLowerCase().includes(searchLower))
+        );
+      }
 
       res.json({
         message: 'Anlagen retrieved successfully',

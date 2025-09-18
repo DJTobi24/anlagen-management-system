@@ -16,6 +16,8 @@ import {
   DocumentChartBarIcon,
   CameraIcon,
   ClipboardDocumentCheckIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 import { Avatar } from '../ui/avatar';
 import { Dropdown, DropdownButton, DropdownItem, DropdownLabel, DropdownMenu } from '../ui/dropdown';
@@ -24,6 +26,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [expandedItems, setExpandedItems] = useState<string[]>(['AKS-Verwaltung']); // AKS expanded by default
   
   console.log('User in Layout:', user); // Debug log
 
@@ -39,21 +42,86 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   ];
 
   const adminNavigation = [
-    { name: 'AKS-Verwaltung', href: '/aks', icon: QrCodeIcon },
+    { 
+      name: 'AKS-Verwaltung', 
+      href: '/aks', 
+      icon: QrCodeIcon,
+      children: [
+        { name: 'AKS-Codes', href: '/aks', icon: QrCodeIcon },
+        { name: 'AKS-Felder', href: '/aks-fields', icon: ClipboardDocumentListIcon },
+      ]
+    },
     { name: 'Benutzer', href: '/users', icon: UsersIcon },
+    { name: 'Benutzerverwaltung', href: '/user-management', icon: UsersIcon, roles: ['admin', 'system_admin'] },
     { name: 'Einstellungen', href: '/settings', icon: CogIcon },
   ];
 
-  const NavLink = ({ item }: { item: typeof navigation[0] }) => {
+  const toggleExpanded = (itemName: string) => {
+    setExpandedItems(prev => {
+      if (prev.includes(itemName)) {
+        return prev.filter(name => name !== itemName);
+      } else {
+        return [...prev, itemName];
+      }
+    });
+  };
+
+  const NavLink = ({ item, isChild = false }: { item: any, isChild?: boolean }) => {
     const isActive = location.pathname === item.href || 
                     (item.href !== '/' && location.pathname.startsWith(item.href));
     const Icon = item.icon;
+    const hasChildren = item.children && item.children.length > 0;
+    const isExpanded = expandedItems.includes(item.name);
+    const isParentActive = hasChildren && item.children.some((child: any) => 
+      location.pathname === child.href || location.pathname.startsWith(child.href)
+    );
+    
+    if (hasChildren) {
+      return (
+        <div>
+          <button
+            onClick={() => toggleExpanded(item.name)}
+            className={`
+              w-full group flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200
+              ${isParentActive 
+                ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-200' 
+                : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white'
+              }
+            `}
+          >
+            <div className="flex items-center">
+              <Icon className={`
+                mr-3 h-5 w-5 flex-shrink-0 transition-colors duration-200
+                ${isParentActive 
+                  ? 'text-indigo-600 dark:text-indigo-400' 
+                  : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400'
+                }
+              `} />
+              {item.name}
+            </div>
+            {isExpanded ? (
+              <ChevronDownIcon className="h-4 w-4 text-gray-400" />
+            ) : (
+              <ChevronRightIcon className="h-4 w-4 text-gray-400" />
+            )}
+          </button>
+          {isExpanded && (
+            <div className="ml-4 mt-1 space-y-1">
+              {item.children.map((child: any) => (
+                <NavLink key={child.name} item={child} isChild={true} />
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
     
     return (
       <Link
         to={item.href}
         className={`
           group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200
+          ${isChild ? 'ml-8' : ''}
           ${isActive 
             ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-200' 
             : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white'
@@ -114,7 +182,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               <NavLink key={item.name} item={item} />
             ))}
 
-          {(user?.rolle === 'admin' || user?.rolle === 'supervisor') && (
+          {(user?.rolle === 'admin' || user?.rolle === 'supervisor' || user?.rolle === 'system_admin') && (
             <>
               <div className="my-3 border-t border-gray-200 dark:border-gray-700" />
               <div className="px-3 py-2">
@@ -122,9 +190,21 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   Administration
                 </p>
               </div>
-              {adminNavigation.map((item) => (
-                <NavLink key={item.name} item={item} />
-              ))}
+              {adminNavigation
+                .filter(item => {
+                  if (user?.rolle === 'system_admin') return true;
+                  if (user?.rolle === 'admin') {
+                    if (item.roles) {
+                      return item.roles.includes('admin');
+                    }
+                    return true;
+                  }
+                  if (user?.rolle === 'supervisor' && item.href === '/aks') return true;
+                  return false;
+                })
+                .map((item) => (
+                  <NavLink key={item.name} item={item} />
+                ))}
             </>
           )}
         </nav>
@@ -169,10 +249,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   </div>
                 </DropdownButton>
                 <DropdownMenu anchor="bottom end" className="min-w-56">
-                  <DropdownItem href="/settings">
-                    <CogIcon className="h-4 w-4" data-slot="icon" />
-                    <DropdownLabel>Einstellungen</DropdownLabel>
-                  </DropdownItem>
                   <DropdownItem onClick={logout}>
                     <ArrowRightOnRectangleIcon className="h-4 w-4" data-slot="icon" />
                     <DropdownLabel>Abmelden</DropdownLabel>

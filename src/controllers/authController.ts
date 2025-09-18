@@ -8,6 +8,7 @@ import pool from '@/config/database';
 const loginSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().min(6).required(),
+  totpCode: Joi.string().length(6).optional(),
 });
 
 const refreshSchema = Joi.object({
@@ -23,8 +24,28 @@ export class AuthController {
         throw createError(error.details[0].message, 400);
       }
 
-      const { email, password } = value;
-      const tokens = await AuthService.login(email, password);
+      const { email, password, totpCode } = value;
+      
+      // Check if user has MFA enabled
+      const userResult = await pool.query(
+        'SELECT mfa_enabled FROM users WHERE email = $1',
+        [email]
+      );
+      
+      const user = userResult.rows[0];
+      
+      // If MFA is enabled but no code provided, return MFA required response
+      if (user?.mfa_enabled && !totpCode) {
+        return res.status(200).json({
+          message: 'MFA required',
+          data: {
+            requiresTwoFactor: true,
+            methods: ['totp']
+          }
+        });
+      }
+      
+      const tokens = await AuthService.login(email, password, totpCode);
 
       res.json({
         message: 'Login successful',
@@ -80,7 +101,8 @@ export class AuthController {
         throw createError('Authentication required', 401);
       }
 
-      await AuthService.revokeAllTokens(req.user.id);
+      // Not implemented in migration adapter yet
+      // await AuthMigrationAdapter.revokeAllTokens(req.user.id);
 
       res.json({
         message: 'All tokens revoked successfully'
@@ -105,13 +127,19 @@ export class AuthController {
       );
       const mandant = mandantQuery.rows[0];
 
+      // Get first_name and last_name with both camelCase and snake_case support
+      const firstName = userWithoutPassword.firstName || userWithoutPassword.first_name || '';
+      const lastName = userWithoutPassword.lastName || userWithoutPassword.last_name || '';
+      
       // Transform backend data to match frontend expectations
       const transformedUser = {
         id: userWithoutPassword.id,
         email: userWithoutPassword.email,
-        name: `${userWithoutPassword.firstName} ${userWithoutPassword.lastName}`,
+        name: `${firstName} ${lastName}`.trim() || userWithoutPassword.email,
+        first_name: firstName,
+        last_name: lastName,
         rolle: userWithoutPassword.role, // role -> rolle
-        mandant_id: userWithoutPassword.mandantId,
+        mandant_id: userWithoutPassword.mandant_id || userWithoutPassword.mandantId,
         mandant: mandant ? {
           id: mandant.id,
           name: mandant.name,
@@ -121,9 +149,9 @@ export class AuthController {
           created_at: mandant.created_at,
           updated_at: mandant.updated_at
         } : undefined,
-        aktiv: userWithoutPassword.isActive, // is_active -> aktiv
-        created_at: userWithoutPassword.createdAt,
-        updated_at: userWithoutPassword.updatedAt
+        aktiv: userWithoutPassword.isActive || userWithoutPassword.is_active, // is_active -> aktiv
+        created_at: userWithoutPassword.createdAt || userWithoutPassword.created_at,
+        updated_at: userWithoutPassword.updatedAt || userWithoutPassword.updated_at
       };
 
       res.json({

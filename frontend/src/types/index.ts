@@ -2,12 +2,13 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  rolle: 'admin' | 'techniker' | 'aufnehmer' | 'supervisor' | 'mitarbeiter';
+  rolle: 'admin' | 'techniker' | 'aufnehmer' | 'supervisor' | 'mitarbeiter' | 'system_admin';
   mandant_id: string;
   mandant?: Mandant;
   aktiv: boolean;
   created_at: string;
   updated_at: string;
+  permissions?: string[];
 }
 
 export interface Mandant {
@@ -33,6 +34,17 @@ export interface Anlage {
   liegenschaft_name?: string;
   qr_code?: string;
   dynamic_fields?: Record<string, any>;
+  // Neue Felder
+  etage?: string;
+  raum?: string;
+  anzahl?: number;
+  hersteller?: string;
+  typ?: string;
+  seriennummer?: string;
+  baujahr?: number;
+  qr_code_manual?: string;
+  hersteller_qr_data?: string;
+  fotos?: string[];
   is_active: boolean;
   created_at: string;
   updated_at: string;

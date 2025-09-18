@@ -16,7 +16,8 @@ export enum UserRole {
   TECHNIKER = 'techniker',
   AUFNEHMER = 'aufnehmer',
   MITARBEITER = 'mitarbeiter',
-  SUPERVISOR = 'supervisor'
+  SUPERVISOR = 'supervisor',
+  SYSTEM_ADMIN = 'system_admin'
 }
 
 export interface Mandant {
@@ -62,6 +63,16 @@ export interface Anlage {
   status: AnlageStatus;
   zustandsBewertung: number;
   dynamicFields: Record<string, any>;
+  // Neue Felder
+  etage?: string;
+  raum?: string;
+  anzahl?: number;
+  hersteller?: string;
+  typ?: string;
+  seriennummer?: string;
+  baujahr?: number;
+  qrCodeManual?: string;
+  herstellerQrData?: string;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

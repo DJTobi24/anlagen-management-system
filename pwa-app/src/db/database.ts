@@ -41,6 +41,22 @@ export interface CachedAnlage {
   qr_code?: string;
   dynamic_fields?: any;
   objekt_id?: string;
+  // Neue Detail-Felder
+  etage?: string;
+  raum?: string;
+  anzahl?: number;
+  hersteller?: string;
+  typ?: string;
+  seriennummer?: string;
+  // AKS-spezifische Felder
+  aks_field_values?: any[];
+  fields_validated?: boolean;
+  missing_required_fields?: string[];
+  baujahr?: number;
+  qr_code_manual?: string;
+  hersteller_qr_data?: string;
+  // Fotos
+  fotos?: string[];
   // Offline changes
   localChanges?: boolean;
   pendingChanges?: any;
@@ -77,6 +93,12 @@ export interface OfflineState {
   lastSuccessfulSync?: Date;
 }
 
+export interface CachedAksFieldDefinition {
+  aksCode: string;
+  fields: any[];
+  lastSynced: Date;
+}
+
 // Database class
 export class AnlagenDatabase extends Dexie {
   auftraege!: Table<CachedAuftrag>;
@@ -84,6 +106,8 @@ export class AnlagenDatabase extends Dexie {
   aksCodes!: Table<CachedAksCode>;
   syncQueue!: Table<SyncQueueItem>;
   offlineState!: Table<OfflineState>;
+  aksFieldDefinitions!: Table<CachedAksFieldDefinition>;
+  objekte!: Table<CachedObjekt>;
 
   constructor() {
     super('AnlagenPWADatabase');
@@ -93,7 +117,9 @@ export class AnlagenDatabase extends Dexie {
       anlagen: 'id, aufnahme_id, anlage_id, bearbeitet, localChanges',
       aksCodes: 'code, level, parent_code',
       syncQueue: '++id, type, entityId, synced, timestamp',
-      offlineState: 'id'
+      offlineState: 'id',
+      aksFieldDefinitions: 'aksCode, lastSynced',
+      objekte: 'id, liegenschaftId'
     });
   }
 
@@ -203,12 +229,14 @@ export class AnlagenDatabase extends Dexie {
         pendingChanges: { ...anlage.pendingChanges, ...changes }
       });
 
-      // Add to sync queue
-      await this.addToSyncQueue({
-        type: 'UPDATE_ANLAGE',
-        entityId: anlageId,
-        data: changes
-      });
+      // Add to sync queue only if not a temporary ID
+      if (!anlageId.startsWith('temp_') && !anlageId.startsWith('TEMP-')) {
+        await this.addToSyncQueue({
+          type: 'UPDATE_ANLAGE',
+          entityId: anlageId,
+          data: changes
+        });
+      }
 
       // Mark Auftrag as having local changes
       if (anlage.aufnahme_id) {
@@ -230,11 +258,14 @@ export class AnlagenDatabase extends Dexie {
       localChanges: true
     });
 
-    await this.addToSyncQueue({
-      type: 'MARK_BEARBEITET',
-      entityId: `${aufnahmeId}:${anlageId}`,
-      data
-    });
+    // Only sync if not a temporary ID
+    if (!anlageId.startsWith('temp_') && !anlageId.startsWith('TEMP-')) {
+      await this.addToSyncQueue({
+        type: 'MARK_BEARBEITET',
+        entityId: `${aufnahmeId}:${anlageId}`,
+        data
+      });
+    }
 
     await this.auftraege.update(aufnahmeId, { localChanges: true });
   }

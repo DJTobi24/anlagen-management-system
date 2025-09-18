@@ -114,16 +114,29 @@ class SyncManager {
 
   // Sync create Anlage
   private async syncCreateAnlage(item: any): Promise<void> {
-    // Create the Anlage on the server
-    const response = await apiClient.post('/anlagen', item.data);
-    
-    // Update local record with server-generated ID
     const tempId = item.entityId;
-    const realId = response.data.id;
     
-    // Get the temporary Anlage
+    // Get the temporary Anlage first - CRITICAL: Never delete without verification
     const tempAnlage = await db.anlagen.get(tempId);
-    if (tempAnlage) {
+    if (!tempAnlage) {
+      throw new Error('Temporary Anlage not found');
+    }
+    
+    try {
+      // Create the Anlage on the server
+      console.log('Creating Anlage on server:', item.data);
+      const response = await apiClient.post('/anlagen', item.data);
+      console.log('Server response:', response);
+      
+      // Verify we got a valid response with ID
+      // The API client already returns response.data, so response IS the data
+      if (!response || (!response.id && !response.data?.id)) {
+        throw new Error('Invalid server response - no ID returned');
+      }
+      
+      // Get ID from response (could be response.id or response.data.id)
+      const realId = response.id || response.data?.id;
+      
       // Create new record with real ID
       await db.anlagen.add({
         ...tempAnlage,
@@ -133,13 +146,32 @@ class SyncManager {
         isNew: false
       });
       
-      // Delete temporary record
+      // Verify the new record was created successfully before deleting temp
+      const newAnlage = await db.anlagen.get(realId);
+      if (!newAnlage) {
+        throw new Error('Failed to create new Anlage record with server ID');
+      }
+      
+      // Only delete temporary record after verification
       await db.anlagen.delete(tempId);
       
       // If this Anlage was also part of a Datenaufnahme, add it
       if (item.data.aufnahmeId) {
-        await apiClient.post(`/datenaufnahme/${item.data.aufnahmeId}/anlagen/${realId}/hinzufuegen`, {});
+        try {
+          await apiClient.post(`/datenaufnahme/${item.data.aufnahmeId}/anlagen/${realId}/hinzufuegen`, {});
+          
+          // Neue Anlagen sind automatisch bearbeitet
+          await apiClient.post(`/datenaufnahme/${item.data.aufnahmeId}/anlagen/${realId}/bearbeitet`, {
+            notizen: 'Neue Anlage erstellt'
+          });
+        } catch (error) {
+          console.warn('Failed to add Anlage to Datenaufnahme, but Anlage was created:', error);
+        }
       }
+    } catch (error) {
+      // If anything fails, keep the local Anlage and throw error for retry
+      console.error('Failed to sync Anlage:', error);
+      throw error;
     }
   }
 
@@ -211,6 +243,13 @@ class SyncManager {
         return;
       }
 
+      // CRITICAL: Save local unsaved Anlagen before clearing
+      const localUnsavedAnlagen = await db.anlagen
+        .filter(anlage => !!anlage.isNew || !!anlage.localChanges)
+        .toArray();
+      
+      console.log('Preserving local unsaved Anlagen:', localUnsavedAnlagen.length);
+
       // Clear old data and cache new
       await db.transaction('rw', db.auftraege, db.anlagen, async () => {
         // Clear existing data
@@ -220,6 +259,14 @@ class SyncManager {
         // Cache new data
         for (const auftrag of auftraege) {
           await db.cacheAuftrag(auftrag);
+        }
+        
+        // Restore local unsaved Anlagen
+        if (localUnsavedAnlagen.length > 0) {
+          console.log('Restoring local unsaved Anlagen...');
+          for (const anlage of localUnsavedAnlagen) {
+            await db.anlagen.add(anlage);
+          }
         }
       });
 

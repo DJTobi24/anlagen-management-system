@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string, totpCode?: string) => Promise<any>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -44,10 +44,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string, totpCode?: string): Promise<any> => {
     try {
       setLoading(true);
-      const response = await authService.login(email, password);
+      const response = await authService.login(email, password, totpCode);
+      
+      // Check if 2FA is required
+      if (response.requiresMfa || response.requiresTwoFactor) {
+        return { 
+          requiresTwoFactor: true, 
+          requiresMfa: true,
+          methods: response.mfaMethods || response.methods || ['totp']
+        };
+      }
+      
       localStorage.setItem('auth_token', response.accessToken);
       localStorage.setItem('refresh_token', response.refreshToken);
       
@@ -59,8 +69,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success('Erfolgreich angemeldet!');
       return true;
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Anmeldung fehlgeschlagen');
-      return false;
+      // Don't show toast for 2FA required
+      if (error.response?.data?.code !== 'MFA_REQUIRED') {
+        toast.error(error.response?.data?.message || 'Anmeldung fehlgeschlagen');
+      }
+      throw error;
     } finally {
       setLoading(false);
     }

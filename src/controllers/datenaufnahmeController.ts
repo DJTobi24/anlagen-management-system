@@ -6,7 +6,7 @@ import { UserRole } from '../types';
 // Get all Datenaufnahme-Aufträge with filters
 export const getDatenaufnahmen = async (req: AuthRequest, res: Response) => {
   try {
-    const mandantId = req.mandantId || req.user?.mandant_id;
+    const mandantId = req.mandantId || req.user?.mandantId;
     const { status, zugewiesen_an, erstellt_von } = req.query;
 
     let query = `
@@ -21,7 +21,8 @@ export const getDatenaufnahmen = async (req: AuthRequest, res: Response) => {
         da.updated_at,
         da.completed_at,
         CONCAT(u1.first_name, ' ', u1.last_name) as ersteller_name,
-        CONCAT(u2.first_name, ' ', u2.last_name) as zugewiesener_name,
+        CONCAT(u2.first_name, ' ', u2.last_name) as mitarbeiter_name,
+        u2.email as mitarbeiter_email,
         (
           SELECT COUNT(DISTINCT dal.liegenschaft_id)
           FROM datenaufnahme_liegenschaften dal
@@ -89,7 +90,7 @@ export const getDatenaufnahmen = async (req: AuthRequest, res: Response) => {
 export const getMeineAuftraege = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
-    const mandantId = req.mandantId || req.user?.mandant_id;
+    const mandantId = req.mandantId || req.user?.mandantId;
 
     const query = `
       SELECT 
@@ -176,7 +177,7 @@ export const getMeineAuftraege = async (req: AuthRequest, res: Response) => {
 export const getDatenaufnahme = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const mandantId = req.mandantId || req.user?.mandant_id;
+    const mandantId = req.mandantId || req.user?.mandantId;
     const userRole = req.user?.role;
     const userId = req.user?.id;
 
@@ -184,7 +185,8 @@ export const getDatenaufnahme = async (req: AuthRequest, res: Response) => {
       SELECT 
         da.*,
         CONCAT(u1.first_name, ' ', u1.last_name) as ersteller_name,
-        CONCAT(u2.first_name, ' ', u2.last_name) as zugewiesener_name,
+        CONCAT(u2.first_name, ' ', u2.last_name) as mitarbeiter_name,
+        u2.email as mitarbeiter_email,
         
         -- Statistik
         json_build_object(
@@ -299,7 +301,7 @@ export const createDatenaufnahme = async (req: AuthRequest, res: Response) => {
       anlagen_config = []
     } = req.body;
 
-    const mandantId = req.mandantId || req.user?.mandant_id;
+    const mandantId = req.mandantId || req.user?.mandantId;
     const erstelltVon = req.user?.id;
 
     await client.query('BEGIN');
@@ -433,7 +435,7 @@ export const updateDatenaufnahme = async (req: AuthRequest, res: Response) => {
       end_datum
     } = req.body;
 
-    const mandantId = req.mandantId || req.user?.mandant_id;
+    const mandantId = req.mandantId || req.user?.mandantId;
     const userId = req.user?.id;
     const userRole = req.user?.role;
 
@@ -503,7 +505,7 @@ export const updateAnlagenConfig = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { anlagen_config } = req.body;
-    const mandantId = req.mandantId || req.user?.mandant_id;
+    const mandantId = req.mandantId || req.user?.mandantId;
 
     await client.query('BEGIN');
 
@@ -618,7 +620,7 @@ export const markAnlageBearbeitet = async (req: AuthRequest, res: Response) => {
 export const addAnlageToDatenaufnahme = async (req: AuthRequest, res: Response) => {
   try {
     const { aufnahmeId, anlageId } = req.params;
-    const mandantId = req.mandantId || req.user?.mandant_id;
+    const mandantId = req.mandantId || req.user?.mandantId;
 
     // Check if Datenaufnahme exists and user has access
     const checkQuery = `
@@ -669,7 +671,7 @@ export const addAnlageToDatenaufnahme = async (req: AuthRequest, res: Response) 
 export const deleteDatenaufnahme = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const mandantId = req.mandantId || req.user?.mandant_id;
+    const mandantId = req.mandantId || req.user?.mandantId;
 
     const deleteQuery = `
       DELETE FROM datenaufnahme_auftraege
@@ -694,7 +696,7 @@ export const deleteDatenaufnahme = async (req: AuthRequest, res: Response) => {
 export const getDatenaufnahmeFortschritt = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const mandantId = req.mandantId || req.user?.mandant_id;
+    const mandantId = req.mandantId || req.user?.mandantId;
 
     const query = `
       SELECT 
@@ -724,7 +726,8 @@ async function getDatenaufnahmeById(id: string, mandantId: string) {
     SELECT 
       da.*,
       CONCAT(u1.first_name, ' ', u1.last_name) as ersteller_name,
-      CONCAT(u2.first_name, ' ', u2.last_name) as zugewiesener_name,
+      CONCAT(u2.first_name, ' ', u2.last_name) as mitarbeiter_name,
+      u2.email as mitarbeiter_email,
       
       -- Liegenschaften
       (
