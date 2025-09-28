@@ -10,7 +10,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon
 } from '@heroicons/react/24/outline';
-import api from '../services/api';
+import { api } from '../services/api';
 
 interface ImportJob {
   id: string;

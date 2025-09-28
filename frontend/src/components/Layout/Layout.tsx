@@ -27,8 +27,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>(['AKS-Verwaltung']); // AKS expanded by default
-  
-  console.log('User in Layout:', user); // Debug log
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: HomeIcon },
@@ -42,17 +40,16 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   ];
 
   const adminNavigation = [
-    { 
-      name: 'AKS-Verwaltung', 
-      href: '/aks', 
+    {
+      name: 'AKS-Verwaltung',
+      href: '/aks',
       icon: QrCodeIcon,
       children: [
         { name: 'AKS-Codes', href: '/aks', icon: QrCodeIcon },
         { name: 'AKS-Felder', href: '/aks-fields', icon: ClipboardDocumentListIcon },
       ]
     },
-    { name: 'Benutzer', href: '/users', icon: UsersIcon },
-    { name: 'Benutzerverwaltung', href: '/user-management', icon: UsersIcon, roles: ['admin', 'system_admin'] },
+    { name: 'Benutzerverwaltung', href: '/users', icon: UsersIcon, roles: ['admin', 'system_admin'] },
     { name: 'Einstellungen', href: '/settings', icon: CogIcon },
   ];
 

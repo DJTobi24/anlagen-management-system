@@ -9,7 +9,6 @@ import Anlagen from './pages/Anlagen';
 import AnlageDetail from './pages/AnlageDetail';
 import AnlageEdit from './pages/AnlageEdit';
 import Import from './pages/Import';
-import Users from './pages/Users';
 import Settings from './pages/Settings';
 import AksManagement from './pages/AksManagement';
 import AnlageNew from './pages/AnlageNew';
@@ -22,21 +21,6 @@ import DatenaufnahmeVerwaltung from './pages/DatenaufnahmeVerwaltung';
 import MeineDatenaufnahmen from './pages/MeineDatenaufnahmen';
 import UserManagement from './pages/UserManagement';
 import AksFieldManagement from './pages/AksFieldManagement';
-
-// ProtectedRoute component for future use
-// const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-//   const { user, loading } = useAuth();
-//   
-//   if (loading) {
-//     return (
-//       <div className="min-h-screen flex items-center justify-center">
-//         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
-//       </div>
-//     );
-//   }
-//   
-//   return user ? <>{children}</> : <Navigate to="/login" />;
-// };
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -115,13 +99,6 @@ const AppRoutes: React.FC = () => {
         </ProtectedRoute>
       } />
       <Route path="/users" element={
-        <ProtectedRoute>
-          <Layout>
-            {user && user.rolle === 'admin' ? <Users /> : <Navigate to="/" />}
-          </Layout>
-        </ProtectedRoute>
-      } />
-      <Route path="/user-management" element={
         <ProtectedRoute>
           <Layout>
             {user && (user.rolle === 'admin' || user.rolle === 'system_admin') ? <UserManagement /> : <Navigate to="/" />}
