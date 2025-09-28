@@ -1,22 +1,104 @@
+# Dependencies
 node_modules/
-dist/
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+*/node_modules/
 
+# Build outputs
+dist/
+build/
+*/build/
+*/dist/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
 
+# OS files
 .DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+*.bak
+
+# IDE files
 .vscode/
 .idea/
+*.sublime-project
+*.sublime-workspace
 
+# Testing
 coverage/
+*.lcov
+.nyc_output
+
+# Package files
 *.tgz
 *.tar.gz
 
-logs/
-*.log
+# Temporary files
+tmp/
+temp/
+.tmp/
+.cache/
+
+# Upload directories
+uploads/
+!uploads/.gitkeep
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Docker
+docker-compose.override.yml
+
+# Build artifacts
+*.pid
+*.seed
+*.pid.lock
+
+# TypeScript
+*.tsbuildinfo
+.npm
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# PWA service worker
+serviceWorker.js
+service-worker.js.map
+precache-manifest.*.js
+
+# Quick rebuild logs
+quick-rebuild.log
+
+# Test outputs
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Tokens and secrets
+token.txt
+*.key
+*.pem
+*.cert
