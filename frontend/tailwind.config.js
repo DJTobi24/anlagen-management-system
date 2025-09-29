@@ -6,6 +6,14 @@ module.exports = {
   darkMode: 'class',
   theme: {
     extend: {
+      minHeight: {
+        'svh': '100svh',
+      },
+      spacing: {
+        '18': '4.5rem',
+        '112': '28rem',
+        '128': '32rem',
+      },
       borderRadius: {
         'lg': '0.5rem',
       },
@@ -26,7 +34,43 @@ module.exports = {
           '100%': { transform: 'scale(0.9)', opacity: 0 },
         },
       },
+      transitionProperty: {
+        'height': 'height',
+        'spacing': 'margin, padding',
+      },
+      screens: {
+        'pointer-fine': { 'raw': '(pointer: fine)' },
+      },
     },
   },
-  plugins: [],
+  plugins: [
+    function({ addUtilities, addVariant }) {
+      addUtilities({
+        '.size-6': {
+          width: '1.5rem',
+          height: '1.5rem',
+        },
+        '.size-5': {
+          width: '1.25rem',
+          height: '1.25rem',
+        },
+        '.size-4': {
+          width: '1rem',
+          height: '1rem',
+        },
+        '.size-7': {
+          width: '1.75rem',
+          height: '1.75rem',
+        },
+      })
+      addVariant('data-closed', '&[data-state="closed"]')
+      addVariant('data-open', '&[data-state="open"]')
+      addVariant('data-active', '&[data-active="true"]')
+      addVariant('data-current', '&[data-current="true"]')
+      addVariant('data-hover', '&[data-hover="true"]')
+      addVariant('data-slot', '&[data-slot]')
+      addVariant('data-enter', '&[data-enter]')
+      addVariant('data-leave', '&[data-leave]')
+    }
+  ],
 }

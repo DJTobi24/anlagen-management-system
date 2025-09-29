@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "@headlessui/react": "^2.2.6",
+    "@headlessui/react": "^2.2.9",
+    "@headlessui/tailwindcss": "^0.2.2",
     "@heroicons/react": "^2.0.16",
     "@types/file-saver": "^2.0.5",
     "@types/node": "^18.15.0",
@@ -13,7 +14,7 @@
     "classnames": "^2.3.2",
     "clsx": "^2.1.1",
     "file-saver": "^2.0.5",
-    "framer-motion": "^12.23.9",
+    "framer-motion": "^12.23.22",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.533.0",
     "react": "^18.2.0",

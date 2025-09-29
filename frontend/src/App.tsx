@@ -2,22 +2,23 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './components/Auth/Login';
-import Layout from './components/Layout/Layout';
-import Dashboard from './pages/Dashboard';
-import Anlagen from './pages/Anlagen';
-import AnlageDetail from './pages/AnlageDetail';
+import PerfectLayout from './components/Layout/PerfectLayout';
+import DataCollectionDashboard from './pages/DataCollectionDashboard';
+import PerfectAnlagen from './pages/PerfectAnlagen';
+import SimplifiedAnlageDetail from './pages/SimplifiedAnlageDetail';
 import AnlageEdit from './pages/AnlageEdit';
 import Import from './pages/Import';
-import Settings from './pages/Settings';
+import ModernSettings from './pages/ModernSettings';
 import AksManagement from './pages/AksManagement';
 import AnlageNew from './pages/AnlageNew';
 import FMDataCollection from './pages/FMDataCollection';
-import Liegenschaften from './pages/Liegenschaften';
-import Objekte from './pages/Objekte';
+import ModernLiegenschaften from './pages/ModernLiegenschaften';
+import ModernObjekte from './pages/ModernObjekte';
 import Reports from './pages/Reports';
 import ImportReports from './pages/ImportReports';
-import DatenaufnahmeVerwaltung from './pages/DatenaufnahmeVerwaltung';
+import ModernDatenaufnahmeVerwaltung from './pages/ModernDatenaufnahmeVerwaltung';
 import MeineDatenaufnahmen from './pages/MeineDatenaufnahmen';
 import UserManagement from './pages/UserManagement';
 import AksFieldManagement from './pages/AksFieldManagement';
@@ -44,128 +45,128 @@ const AppRoutes: React.FC = () => {
       <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
       <Route path="/" element={
         <ProtectedRoute>
-          <Layout>
-            <Dashboard />
-          </Layout>
+          <PerfectLayout>
+            <DataCollectionDashboard />
+          </PerfectLayout>
         </ProtectedRoute>
       } />
       <Route path="/anlagen" element={
         <ProtectedRoute>
-          <Layout>
-            <Anlagen />
-          </Layout>
+          <PerfectLayout>
+            <PerfectAnlagen />
+          </PerfectLayout>
         </ProtectedRoute>
       } />
       <Route path="/anlagen/new" element={
         <ProtectedRoute>
-          <Layout>
+          <PerfectLayout>
             <AnlageNew />
-          </Layout>
+          </PerfectLayout>
         </ProtectedRoute>
       } />
       <Route path="/anlagen/:id" element={
         <ProtectedRoute>
-          <Layout>
-            <AnlageDetail />
-          </Layout>
+          <PerfectLayout>
+            <SimplifiedAnlageDetail />
+          </PerfectLayout>
         </ProtectedRoute>
       } />
       <Route path="/anlagen/:id/edit" element={
         <ProtectedRoute>
-          <Layout>
+          <PerfectLayout>
             <AnlageEdit />
-          </Layout>
+          </PerfectLayout>
         </ProtectedRoute>
       } />
       <Route path="/import" element={
         <ProtectedRoute>
-          <Layout>
+          <PerfectLayout>
             <Import />
-          </Layout>
+          </PerfectLayout>
         </ProtectedRoute>
       } />
       <Route path="/aks" element={
         <ProtectedRoute>
-          <Layout>
+          <PerfectLayout>
             <AksManagement />
-          </Layout>
+          </PerfectLayout>
         </ProtectedRoute>
       } />
       <Route path="/aks-fields" element={
         <ProtectedRoute>
-          <Layout>
+          <PerfectLayout>
             <AksFieldManagement />
-          </Layout>
+          </PerfectLayout>
         </ProtectedRoute>
       } />
       <Route path="/users" element={
         <ProtectedRoute>
-          <Layout>
+          <PerfectLayout>
             {user && (user.rolle === 'admin' || user.rolle === 'system_admin') ? <UserManagement /> : <Navigate to="/" />}
-          </Layout>
+          </PerfectLayout>
         </ProtectedRoute>
       } />
       <Route path="/settings" element={
         <ProtectedRoute>
-          <Layout>
-            <Settings />
-          </Layout>
+          <PerfectLayout>
+            <ModernSettings />
+          </PerfectLayout>
         </ProtectedRoute>
       } />
       <Route path="/fm-data-collection" element={
         <ProtectedRoute>
-          <Layout>
+          <PerfectLayout>
             <FMDataCollection />
-          </Layout>
+          </PerfectLayout>
         </ProtectedRoute>
       } />
       <Route path="/liegenschaften" element={
         <ProtectedRoute>
-          <Layout>
-            <Liegenschaften />
-          </Layout>
+          <PerfectLayout>
+            <ModernLiegenschaften />
+          </PerfectLayout>
         </ProtectedRoute>
       } />
       <Route path="/objekte" element={
         <ProtectedRoute>
-          <Layout>
-            <Objekte />
-          </Layout>
+          <PerfectLayout>
+            <ModernObjekte />
+          </PerfectLayout>
         </ProtectedRoute>
       } />
       <Route path="/liegenschaften/:liegenschaftId/objekte" element={
         <ProtectedRoute>
-          <Layout>
-            <Objekte />
-          </Layout>
+          <PerfectLayout>
+            <ModernObjekte />
+          </PerfectLayout>
         </ProtectedRoute>
       } />
       <Route path="/reports" element={
         <ProtectedRoute>
-          <Layout>
+          <PerfectLayout>
             <Reports />
-          </Layout>
+          </PerfectLayout>
         </ProtectedRoute>
       } />
       <Route path="/reports/imports" element={
         <ProtectedRoute>
-          <Layout>
+          <PerfectLayout>
             <ImportReports />
-          </Layout>
+          </PerfectLayout>
         </ProtectedRoute>
       } />
       <Route path="/datenaufnahme" element={
         <ProtectedRoute>
-          <Layout>
-            <DatenaufnahmeVerwaltung />
-          </Layout>
+          <PerfectLayout>
+            <ModernDatenaufnahmeVerwaltung />
+          </PerfectLayout>
         </ProtectedRoute>
       } />
       <Route path="/meine-datenaufnahmen" element={
         <ProtectedRoute>
-          <Layout>
+          <PerfectLayout>
             <MeineDatenaufnahmen />
-          </Layout>
+          </PerfectLayout>
         </ProtectedRoute>
       } />
       <Route path="*" element={<Navigate to="/" />} />
@@ -175,11 +176,13 @@ const AppRoutes: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <div className="App">
-        <AppRoutes />
-      </div>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <div className="App">
+          <AppRoutes />
+        </div>
+      </AuthProvider>
+    </ThemeProvider>
   );
 };
 
